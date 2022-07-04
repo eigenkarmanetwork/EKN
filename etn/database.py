@@ -12,23 +12,23 @@ class DatabaseManager:
         self.conn = None
         self.cur = None
 
-    def open(self):
-        self.lock.aquire()
+    def open(self) -> None:
+        self.lock.acquire()
         while not self.connected:
             self._open()
 
-    def _open(self):
+    def _open(self) -> None:
         try:
             if not os.path.isfile(self.path):
                 self._create_database()
             self.conn = sqlite3.connect(self.path)
-            conn.row_factory = sqlite3.Row
+            self.conn.row_factory = sqlite3.Row
             self.cur = self.conn.cursor()
             self.connected = True
         except sqlite3.Error as e:
             print(f"Database Error: {e}")
 
-    def close(self):
+    def close(self) -> None:
         if self.conn:
             self.conn.commit()
             if self.cur:
@@ -39,7 +39,14 @@ class DatabaseManager:
         self.connected = False
         self.lock.release()
 
-    def _create_database(self):
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()
+
+    def _create_database(self) -> None:
         conn = sqlite3.connect(self.path)
         cur = conn.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS votes (from TEXT, to TEXT, count INTEGER)")
