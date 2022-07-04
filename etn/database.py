@@ -1,3 +1,4 @@
+from etn import types
 import os
 import sqlite3
 import threading
@@ -52,7 +53,14 @@ class DatabaseManager:
         cur.execute("CREATE TABLE IF NOT EXISTS votes (from TEXT, to TEXT, count INTEGER)")
         cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, salt TEXT)")
         cur.execute("CREATE TABLE IF NOT EXISTS service (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, name TEXT)")
-        cur.connections("CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER)")
+        cur.execute("CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER)")
         conn.commit()
         cur.close()
         conn.close()
+
+    def execute(self, sql: str, params: types.SQL_PARAMS) -> sqlite3.Cursor:
+        if not self.connected:
+            raise RuntimeError("Cannot run execute on a closed database!")
+        if params:
+            return self.cur.execute(sql, params)
+        return self.cur.execute(sql)
