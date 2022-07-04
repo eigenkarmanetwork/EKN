@@ -50,9 +50,9 @@ class DatabaseManager:
     def _create_database(self) -> None:
         conn = sqlite3.connect(self.path)
         cur = conn.cursor()
-        cur.execute("CREATE TABLE IF NOT EXISTS votes (user_from TEXT, user_to TEXT, count INTEGER)")
+        cur.execute("CREATE TABLE IF NOT EXISTS votes (user_from INTEGER, user_to INTEGER, count INTEGER)")
         cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, salt TEXT)")
-        cur.execute("CREATE TABLE IF NOT EXISTS service (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, name TEXT)")
+        cur.execute("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, name TEXT)")
         cur.execute("CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER)")
         conn.commit()
         cur.close()
