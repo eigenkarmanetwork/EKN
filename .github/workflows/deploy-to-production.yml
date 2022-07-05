@@ -17,6 +17,6 @@ jobs:
           script: |
             source /home/etn/venv/bin/activate
             python3 /home/etn/service_stop.py
-            exec git --git-dir=/home/etn/ETN/.git --work-tree=/home/etn/ETN pull origin master
+            git --git-dir=/home/etn/ETN/.git --work-tree=/home/etn/ETN pull origin master
             python3 /home/etn/service_start.py
             deactivate
