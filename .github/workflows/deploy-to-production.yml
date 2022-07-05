@@ -16,7 +16,7 @@ jobs:
           port: ${{secrets.PROD_PORT}}
           script: |
             source /home/etn/venv/bin/activate
-            python3 /home/etn/stop_etn.py
+            python3 /home/etn/service_stop.py
             exec git --git-dir=/home/etn/ETN/.git --work-tree=/home/etn/ETN pull origin master
-            python3 /home/etn/start_etn.py
+            python3 /home/etn/service_start.py
             deactivate
