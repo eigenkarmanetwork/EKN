@@ -117,3 +117,68 @@ def register_connection() -> Response:
     with DatabaseManager() as db:
         db.execute("INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)", (service["id"], service_user, user["id"]))
     return Response("Connection Successful", 200)
+
+
+@app.route("/vote", methods=["POST"])
+def vote() -> Response:
+    """
+    Message Structure:
+    {
+        "service": str (Service's key)
+        "to": str (Username on Service)
+        "from": str (Username on Service)
+        "password": str (Password on ETN)
+    }
+
+    Returns:
+    404: Service was not found.
+    403: Username or Password is incorrect.  # For security reasons this will also be returned if to is not found or if they vote for themselves.
+    200: Success.
+    """
+    key, to, _from, password = get_params(["service", "to", "from", "password"])
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM services WHERE key=:key", {"key": key})
+        service = result.fetchone()
+        if not service:
+            return Response("Service was not found.", 404)
+        result = db.execute("SELECT * FROM connections WHERE service=:service_id AND service_user=:from",
+                            {"service_id": service["id"], "from": _from})
+        from_service_user = result.fetchone()
+        if not from_service_user:
+            return Response("Username or Password is incorrect.", 403)
+        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": from_service_user["user"]})
+        user = result.fetchone()
+        if not user:
+            return Response("Username or Password is incorrect.", 403)
+    salt = user["salt"]
+    sha512 = hashlib.new("sha512")
+    sha512.update(f"{password}:{salt}".encode("utf8"))
+    password_hash = sha512.hexdigest()
+    if password_hash != user["password"]:
+        return Response("Username or Password is incorrect.", 403)
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM connections WHERE service=:service_id AND service_user=:to",
+                            {"service_id": service["id"], "to": to})
+        to_service_user = result.fetchone()
+        if not to_service_user:
+            return Response("Username or Password is incorrect.", 403)
+        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": to_service_user["user"]})
+        to_user = result.fetchone()
+        if not to_user:
+            return Response("Username or Password is incorrect.", 403)
+        from_user = user
+
+        if from_user["id"] == to_user["id"]:
+            return Response("Username or Password is incorrect.", 403)
+
+        result = db.execute("SELECT * FROM votes WHERE user_from=:from AND user_to=:to",
+                            {"from": from_user["id"], "to": to_user["id"]})
+        current = result.fetchone()
+        if current:
+            db.execute("UPDATE votes SET count=:count WHERE user_from=:from AND user_to=:to",
+                       {"from": from_user["id"], "to": to_user["id"], "count": current["count"] + 1})
+        else:
+            db.execute("INSERT INTO votes (user_from, user_to, count) VALUES (?, ?, 1)",
+                       (from_user["id"], to_user["id"]))
+
+    return Response("Success", 200)
