@@ -1,6 +1,21 @@
 <!doctype html>
 <html>
-<form method="POST" action="http://127.0.0.1:31415/vote">
+<script>
+    function on_change(){
+        var form = document.getElementById('form');
+        var selector = document.getElementById('selector');
+        if(selector.value == "local"){
+            form.action = "http://127.0.0.1:31415/vote";
+        }else{
+            form.action = "http://67.207.69.246:31415/vote";
+        }
+    }
+</script>
+Server: <select id="selector" onchange="javascript:on_change()">
+    <option value="local">Local</option>
+    <option value="remote">Remote</option>
+</select>
+<form id="form" method="POST" action="http://127.0.0.1:31415/vote">
 Service Key: <input name="service"><br>
 To: <input name="to"><br>
 From: <input name="from"><br>
