@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Update and Start ETN
-        uses: appleboy/ssh-action@0.1.2
+        uses: appleboy/ssh-action@v0.1.2
         with:
           host: ${{secrets.PROD_HOST}}
           username: ${{secrets.PROD_USERNAME}}
