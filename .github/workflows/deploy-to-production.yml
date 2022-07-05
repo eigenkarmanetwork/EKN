@@ -1,0 +1,22 @@
+name: Deploy to Production Server
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      name: Update and Start ETN
+      uses: appleboy/ssh-action@0.1.2
+      with:
+        host: ${{secrets.PROD_HOST}}
+        username: ${{secrets.PROD_USERNAME}}
+        password: ${{secrets.PROD_PASSWORD}}
+        port: ${{secrets.PROD_PORT}}
+        script: |
+          source /home/etn/venv/bin/activate
+          python3 /home/etn/stop_etn.py
+          exec git --git-dir=/home/etn/ETN/.git --work-tree=/home/etn/ETN pull origin master
+          python3 /home/etn/start_etn.py
+          deactivate
