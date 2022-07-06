@@ -58,7 +58,7 @@ class DatabaseManager:
         cur.execute("CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER)")
         cur.execute("CREATE TABLE IF NOT EXISTS etn_settings (setting TEXT PRIMARY KEY UNIQUE, value TEXT)")
         conn.commit()
-        conn.execute("INSERT INTO etn_settings (setting, value) VALUES('version', '1.0.1')")
+        conn.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '1.0.1')")
         conn.commit()
         cur.close()
         conn.close()
