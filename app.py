@@ -4,6 +4,8 @@ from typing import Any
 import hashlib
 import secrets
 
+
+DatabaseManager()  # Update DB
 app = Flask(__name__)
 
 
@@ -25,6 +27,7 @@ def get_params(params: list[str]) -> Any:
     elif len(ret) == 0:
         return None
     return ret
+
 
 @app.route("/register_user", methods=["POST"])
 def register_user() -> Response:

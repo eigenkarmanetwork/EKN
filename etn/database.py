@@ -1,3 +1,4 @@
+from database_migration.update import update_database
 from etn import types
 import os
 import sqlite3
@@ -12,6 +13,7 @@ class DatabaseManager:
         self.connected = False
         self.conn = None
         self.cur = None
+        update_database(self)
 
     def open(self) -> None:
         self.lock.acquire()
@@ -54,14 +56,20 @@ class DatabaseManager:
         cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, salt TEXT)")
         cur.execute("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, name TEXT)")
         cur.execute("CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER)")
+        cur.execute("CREATE TABLE IF NOT EXISTS etn_settings (setting TEXT PRIMARY KEY UNIQUE, value TEXT)")
+        conn.commit()
+        conn.execute("INSERT INTO etn_settings (setting, value) VALUES('version', '1.0.1')")
         conn.commit()
         cur.close()
         conn.close()
         print("Created database!")
 
-    def execute(self, sql: str, params: types.SQL_PARAMS) -> sqlite3.Cursor:
+    def execute(self, sql: str, params: types.SQL_PARAMS = None) -> sqlite3.Cursor:
         if not self.connected:
             raise RuntimeError("Cannot run execute on a closed database!")
         if params:
             return self.cur.execute(sql, params)
         return self.cur.execute(sql)
+
+    def commit(self):
+        self.conn.commit()
