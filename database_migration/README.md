@@ -14,7 +14,7 @@ The first thing you should do when making a new database version is move the cur
 
 Second, update etn.database._create_database to have the new structure you want. Ensure that you change the version value in the INSERT statement.
 
-Third, create a file in database_migration.versions under the name v{MAJOR}_{MINOR}_{PATCH}.py. Ensure that file has a function called update with the type signature Callable[[DatabaseManager], None]. This function calls all the necessary SQL commands to change the current version to your new version.
+Third, create a file in database_migration.versions under the name v{MAJOR}_{MINOR}_{PATCH}.py. Ensure that file has a function called update with the type signature Callable[[DatabaseManager], None]. This function calls all the necessary SQL commands to change the current version to your new version. Ensure this function changes the etn_settings table to reflect the new version.
 
 Fourth, update database_migration.update to import the file you created in step three, then add the entry into main_database_versions. The key should be your new version without the v, and then the value should be v{MAJOR}_{MINOR}_{PATCH}.update.
 
