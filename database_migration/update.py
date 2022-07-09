@@ -24,7 +24,7 @@ def update_database(database: "DatabaseManager") -> None:
     for v in versions[index + 1:]:
         print(f"Updating database to v{v}")
         if main_database_versions[v]:  # If not None
-            main_database_versions[v](database)
+            main_database_versions[v](database)  # type: ignore
 
 
 def get_version(database: "DatabaseManager") -> str:
