@@ -1,4 +1,4 @@
-from database_migration.versions import v1_0_1, v1_1_0
+from database_migration.versions import v1_0_1, v1_1_0, v2_0_0
 from etn import types
 from typing import Callable, TYPE_CHECKING
 import warnings
@@ -10,6 +10,7 @@ main_database_versions: types.DATABASE_VERSIONS = {
     "1.0.0": None,
     "1.0.1": v1_0_1.update,
     "1.1.0": v1_1_0.update,
+    "2.0.0": v2_0_0.update,
 }
 
 

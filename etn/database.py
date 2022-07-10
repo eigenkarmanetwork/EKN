@@ -52,7 +52,7 @@ class DatabaseManager:
     def _create_database(self) -> None:
         conn = sqlite3.connect(self.path)
         cur = conn.cursor()
-        cur.execute("CREATE TABLE IF NOT EXISTS votes (user_from INTEGER, user_to INTEGER, count INTEGER)")
+        cur.execute("CREATE TABLE IF NOT EXISTS votes (user_from INTEGER, user_to INTEGER, category TEXT DEFAULT 'general', count INTEGER)")
         cur.execute("""CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
@@ -60,11 +60,13 @@ class DatabaseManager:
             salt TEXT,
             security TEXT CHECK(security in (0, 1, 2)) DEFAULT 2
         )""")
-        cur.execute("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, name TEXT)")
+        cur.execute("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, key TEXT, salt TEXT)")
         cur.execute("CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER, key TEXT DEFAULT NULL)")
         cur.execute("CREATE TABLE IF NOT EXISTS etn_settings (setting TEXT PRIMARY KEY UNIQUE, value TEXT)")
+        cur.execute("CREATE TABLE IF NOT EXISTS categories (category TEXT PRIMARY KEY UNIQUE)")
         conn.commit()
-        conn.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '1.1.0')")
+        conn.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '2.0.0')")
+        conn.execute("INSERT INTO categories (category) VALUES ('general')")
         conn.commit()
         cur.close()
         conn.close()

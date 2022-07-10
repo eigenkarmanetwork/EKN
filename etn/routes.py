@@ -49,12 +49,12 @@ def register_service() -> Response:
         result = db.execute("SELECT * FROM services WHERE name=:name", {"name": name})
         if result.fetchone():
             return Response("Name is not available.", 409)
-        while True:
-            key = secrets.token_hex(16)
-            result = db.execute("SELECT * FROM services WHERE key=:key", {"key": key})
-            if result.fetchone() is None:
-                break
-        db.execute("INSERT INTO services (key, name) VALUES (?, ?)", (key, name))
+        key = secrets.token_hex(16)
+        salt = secrets.token_hex(6)
+        sha512 = hashlib.new("sha512")
+        sha512.update(f"{key}:{salt}".encode("utf8"))
+        key_hash = sha512.hexdigest()
+        db.execute("INSERT INTO services (name, key, salt) VALUES (?, ?, ?)", (name, key_hash, salt))
         return Response(key, 200)
 
 
