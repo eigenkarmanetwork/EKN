@@ -1,9 +1,14 @@
+from database_migration.update import get_version
 from etn.database import DatabaseManager
 from etn.helpers import get_params, get_votes
 from flask import Response
 import hashlib
 import json
 import secrets
+
+
+def version() -> Response:
+    return Response(get_version(DatabaseManager()), 200)
 
 
 def register_user() -> Response:
