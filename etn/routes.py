@@ -34,6 +34,9 @@ def register_user() -> Response:
         if result.fetchone():
             return Response("Username is not available.", 409)  # 409: Conflict
         db.execute("INSERT INTO users (username, password, salt) VALUES (?, ?, ?)", (username, password_hash, salt))
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        id = result.fetchone()["id"]
+        db.execute("INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)", (db.etn_service_id, username, id))
     return Response("Registration Successful", 200)
 
 
