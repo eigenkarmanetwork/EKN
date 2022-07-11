@@ -16,14 +16,13 @@ main_database_versions: types.DATABASE_VERSIONS = {
 
 def update_database(database: "DatabaseManager") -> None:
     version = get_version(database)
-    print(f"Current database version: {version}")
     versions = list(main_database_versions.keys())
     if version not in versions:
         warnings.warn("Database version doesn't exist in dictionary", Warning)
         return
     index = versions.index(version)
     for v in versions[index + 1:]:
-        print(f"Updating database to v{v}")
+        print(f"Updating database from v{version} to v{v}")
         if main_database_versions[v]:  # If not None
             main_database_versions[v](database)  # type: ignore
 

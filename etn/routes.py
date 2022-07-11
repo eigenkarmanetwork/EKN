@@ -62,22 +62,29 @@ def register_connection() -> Response:
     """
     Message Structure:
     {
-        "service": str (Service's key)
+        "service_name": str (Service's name)
+        "service_key": str (Service's key)
         "service_user": str (Username on Service)
         "username": str (Username on ETN)
         "password": str (Password on ETN)
     }
 
     Returns:
-    404: Service was not found.
+    404: Service was not found.  # This will be returned if the name or key is incorrect.
     403: Username or Password is incorrect.
     200: Success.
     """
-    key, service_user, username, password = get_params(["service", "service_user", "username", "password"])
+    service, key, service_user, username, password = get_params(["service_name", "service_key", "service_user", "username", "password"])
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM services WHERE key=:key", {"key": key})
-        service = result.fetchone()
-        if not service:
+        result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
+        service_obj = result.fetchone()
+        if not service_obj:
+            return Response("Service was not found.", 404)
+        salt = service_obj["salt"]
+        sha512 = hashlib.new("sha512")
+        sha512.update(f"{key}:{salt}".encode("utf8"))
+        key_hash = sha512.hexdigest()
+        if key_hash != service_obj["key"]:
             return Response("Service was not found.", 404)
         result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
         user = result.fetchone()
@@ -92,7 +99,7 @@ def register_connection() -> Response:
         return Response("Username or Password is incorrect.", 403)
 
     with DatabaseManager() as db:
-        db.execute("INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)", (service["id"], service_user, user["id"]))
+        db.execute("INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)", (service_obj["id"], service_user, user["id"]))
     return Response("Connection Successful", 200)
 
 
@@ -100,25 +107,32 @@ def vote() -> Response:
     """
     Message Structure:
     {
-        "service": str (Service's key)
+        "service_name": str (Service's name)
+        "service_key": str (Service's key)
         "to": str (Username on Service)
         "from": str (Username on Service)
         "password": str (Password on ETN)
     }
 
     Returns:
-    404: Service was not found.
+    404: Service was not found.  # This will be returned if the name or key is incorrect.
     403: Username or Password is incorrect.  # For security reasons this will also be returned if to is not found or if they vote for themselves.
     200: Success.
     """
-    key, to, _from, password = get_params(["service", "to", "from", "password"])
+    service, key, to, _from, password = get_params(["service_name", "service_key", "to", "from", "password"])
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM services WHERE key=:key", {"key": key})
-        service = result.fetchone()
-        if not service:
+        result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
+        service_obj = result.fetchone()
+        if not service_obj:
+            return Response("Service was not found.", 404)
+        salt = service_obj["salt"]
+        sha512 = hashlib.new("sha512")
+        sha512.update(f"{key}:{salt}".encode("utf8"))
+        key_hash = sha512.hexdigest()
+        if key_hash != service_obj["key"]:
             return Response("Service was not found.", 404)
         result = db.execute("SELECT * FROM connections WHERE service=:service_id AND service_user=:from",
-                            {"service_id": service["id"], "from": _from})
+                            {"service_id": service_obj["id"], "from": _from})
         from_service_user = result.fetchone()
         if not from_service_user:
             return Response("Username or Password is incorrect.", 403)
@@ -134,7 +148,7 @@ def vote() -> Response:
         return Response("Username or Password is incorrect.", 403)
     with DatabaseManager() as db:
         result = db.execute("SELECT * FROM connections WHERE service=:service_id AND service_user=:to",
-                            {"service_id": service["id"], "to": to})
+                            {"service_id": service_obj["id"], "to": to})
         to_service_user = result.fetchone()
         if not to_service_user:
             return Response("Username or Password is incorrect.", 403)
@@ -164,14 +178,15 @@ def get_score() -> Response:
     """
     Message Structure:
     {
-        "service": str (Service's key)
+        "service_name": str (Service's name)
+        "service_key": str (Service's key)
         "for": str (Username on Service)
         "from": str (Username on Service)
         "password": str (Password on ETN)
     }
 
     Returns:
-    404: Service was not found.
+    404: Service was not found.  # This will be returned if the name or key is incorrect.
     403: Username or Password is incorrect.  # For security reasons this will also be returned if for is not found or if they lookup themselves.
     200: JSON:
     {
@@ -180,16 +195,22 @@ def get_score() -> Response:
         "score": float
     }
     """
-    key, _for, _from, password = get_params(["service", "for", "from", "password"])
+    service, key, _for, _from, password = get_params(["service_name", "service_key", "for", "from", "password"])
     if _for == _from:
             return Response("Username or Password is incorrect.", 403)
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM services WHERE key=:key", {"key": key})
-        service = result.fetchone()
-        if not service:
+        result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
+        service_obj = result.fetchone()
+        if not service_obj:
+            return Response("Service was not found.", 404)
+        salt = service_obj["salt"]
+        sha512 = hashlib.new("sha512")
+        sha512.update(f"{key}:{salt}".encode("utf8"))
+        key_hash = sha512.hexdigest()
+        if key_hash != service_obj["key"]:
             return Response("Service was not found.", 404)
         result = db.execute("SELECT * FROM connections WHERE service=:service_id AND service_user=:from",
-                            {"service_id": service["id"], "from": _from})
+                            {"service_id": service_obj["id"], "from": _from})
         from_service_user = result.fetchone()
         if not from_service_user:
             print("From user doesn't exist for service")
@@ -208,7 +229,7 @@ def get_score() -> Response:
         return Response("Username or Password is incorrect.", 403)
     with DatabaseManager() as db:
         result = db.execute("SELECT * FROM connections WHERE service=:service_id and service_user=:for",
-                            {"service_id": service["id"], "for": _for})
+                            {"service_id": service_obj["id"], "for": _for})
         for_service_user = result.fetchone()
         if not for_service_user:
             print("For user doesn't exist for service")
