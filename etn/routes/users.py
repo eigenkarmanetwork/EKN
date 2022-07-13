@@ -21,7 +21,6 @@ def verify_credentials():
 
     if(request.method == "OPTIONS"):
         headers = Headers()
-        headers.add("Access-Control-Allow-Origin", "http://eigentrust.net")
         headers.add("Access-Control-Allow-Origin", "http://www.eigentrust.net")
         headers.add("Vary", "Origin")
         return Response(status=200, headers=headers)
