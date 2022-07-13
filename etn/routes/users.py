@@ -1,6 +1,7 @@
 from etn.database import DatabaseManager
 from etn.helpers import get_params
-from flask import Response
+from flask import Response, request
+from werkzeug.datastructures import Headers
 import hashlib
 
 
@@ -17,6 +18,13 @@ def verify_credentials():
     403: Username or Password is incorrect.
     200: Success.
     """
+
+    if(request.method == "OPTIONS"):
+        headers = Headers()
+        headers.add("Access-Control-Allow-Origin", "http://eigentrust.net")
+        headers.add("Access-Control-Allow-Origin", "http://www.eigentrust.net")
+        headers.add("Vary", "Origin")
+        return Response(status=200, headers=headers)
 
     username, password = get_params(["username", "password"])
 
