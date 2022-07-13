@@ -19,11 +19,12 @@ def verify_credentials():
     200: Success.
     """
 
+    # Set CORS headers.
+    headers = Headers()
+    headers.add("Access-Control-Allow-Origin", "http://www.eigentrust.net")
+    headers.add("Access-Control-Allow-Headers", "Content-type")
+    headers.add("Vary", "Origin")
     if(request.method == "OPTIONS"):
-        headers = Headers()
-        headers.add("Access-Control-Allow-Origin", "http://www.eigentrust.net")
-        headers.add("Access-Control-Allow-Headers", "Content-type")
-        headers.add("Vary", "Origin")
         return Response(status=200, headers=headers)
 
     username, password = get_params(["username", "password"])
@@ -41,4 +42,4 @@ def verify_credentials():
         if not password_hash == user["password"]:
             return Response("Username or Password is incorrect.", 403)
 
-        return Response("Success.", 200)
+        return Response("Success.", 200, headers)
