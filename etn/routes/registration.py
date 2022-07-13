@@ -1,8 +1,7 @@
 from etn.database import DatabaseManager
-from etn.helpers import get_params, get_votes
+from etn.helpers import get_params
 from flask import Response
 import hashlib
-import json
 import secrets
 
 

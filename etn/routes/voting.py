@@ -3,7 +3,6 @@ from etn.helpers import get_params, get_votes
 from flask import Response
 import hashlib
 import json
-import secrets
 
 
 def vote() -> Response:
