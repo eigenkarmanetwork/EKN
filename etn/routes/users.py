@@ -33,13 +33,13 @@ def verify_credentials():
         result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
         user = result.fetchone()
         if not user:
-            return Response("Username or Password is incorrect.", 403)
+            return Response("Username or Password is incorrect.", 403, headers)
 
         salt = user["salt"]
         sha512 = hashlib.new("sha512")
         sha512.update(f"{password}:{salt}".encode("utf8"))
         password_hash = sha512.hexdigest()
         if not password_hash == user["password"]:
-            return Response("Username or Password is incorrect.", 403)
+            return Response("Username or Password is incorrect.", 403, headers)
 
         return Response("Success.", 200, headers)
