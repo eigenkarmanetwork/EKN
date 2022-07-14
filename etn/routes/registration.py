@@ -1,10 +1,12 @@
 from etn.database import DatabaseManager
+from etn.decs import allow_cors
 from etn.helpers import get_params
 from flask import Response
 import hashlib
 import secrets
 
 
+@allow_cors
 def register_user() -> Response:
     """
     Message Structure:
@@ -17,6 +19,10 @@ def register_user() -> Response:
     409: Username is not available.
     200: Success.
     """
+
+    if(request.method == "OPTIONS"):
+        return Response()
+
     username, password = get_params(["username", "password"])
 
     salt = secrets.token_hex(6)

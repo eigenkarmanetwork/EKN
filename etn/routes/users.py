@@ -1,10 +1,12 @@
 from etn.database import DatabaseManager
+from etn.decs import allow_cors
 from etn.helpers import get_params
 from flask import Response, request
 from werkzeug.datastructures import Headers
 import hashlib
 
 
+@allow_cors
 def verify_credentials():
     """
     Used to verify ETN user credentials for website login, or other purposes.
@@ -19,13 +21,8 @@ def verify_credentials():
     200: Success.
     """
 
-    # Set CORS headers.
-    headers = Headers()
-    headers.add("Access-Control-Allow-Origin", "http://www.eigentrust.net")
-    headers.add("Access-Control-Allow-Headers", "Content-type")
-    headers.add("Vary", "Origin")
     if(request.method == "OPTIONS"):
-        return Response(status=200, headers=headers)
+        return Response()
 
     username, password = get_params(["username", "password"])
 
@@ -33,13 +30,13 @@ def verify_credentials():
         result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
         user = result.fetchone()
         if not user:
-            return Response("Username or Password is incorrect.", 403, headers)
+            return Response("Username or Password is incorrect.", 403)
 
         salt = user["salt"]
         sha512 = hashlib.new("sha512")
         sha512.update(f"{password}:{salt}".encode("utf8"))
         password_hash = sha512.hexdigest()
         if not password_hash == user["password"]:
-            return Response("Username or Password is incorrect.", 403, headers)
+            return Response("Username or Password is incorrect.", 403)
 
-        return Response("Success.", 200, headers)
+        return Response("Success.", 200)
