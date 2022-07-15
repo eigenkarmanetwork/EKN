@@ -20,7 +20,7 @@ def register_user() -> Response:
     200: Success.
     """
 
-    if(request.method == "OPTIONS"):
+    if request.method == "OPTIONS":
         return Response()
 
     username, password = get_params(["username", "password"])
@@ -40,6 +40,7 @@ def register_user() -> Response:
     return Response("Registration Successful", 200)
 
 
+@allow_cors
 def register_service() -> Response:
     """
     Message Structure:
@@ -51,6 +52,10 @@ def register_service() -> Response:
     409: Name is not available.
     200: key: str
     """
+
+    if request.method == "OPTIONS" :
+        return Response()
+
     name = get_params(["name"])
 
     with DatabaseManager() as db:
@@ -66,6 +71,7 @@ def register_service() -> Response:
         return Response(key, 200)
 
 
+@allow_cors(host="*")
 def register_connection() -> Response:
     """
     Message Structure:
@@ -82,7 +88,12 @@ def register_connection() -> Response:
     403: Username or Password is incorrect.
     200: Success.
     """
+
+    if request.method == "OPTIONS" :
+        return Response()
+
     service, key, service_user, username, password = get_params(["service_name", "service_key", "service_user", "username", "password"])
+
     with DatabaseManager() as db:
         result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
         service_obj = result.fetchone()

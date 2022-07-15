@@ -21,7 +21,7 @@ def verify_credentials():
     200: Success.
     """
 
-    if(request.method == "OPTIONS"):
+    if request.method == "OPTIONS" :
         return Response()
 
     username, password = get_params(["username", "password"])

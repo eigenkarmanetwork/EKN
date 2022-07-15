@@ -1,10 +1,12 @@
 from etn.database import DatabaseManager
+from etn.decs import allow_cors
 from etn.helpers import get_params, get_votes
-from flask import Response
+from flask import Response, request
 import hashlib
 import json
 
 
+@allow_cors(host="*")
 def vote() -> Response:
     """
     Message Structure:
@@ -21,7 +23,12 @@ def vote() -> Response:
     403: Username or Password is incorrect.  # For security reasons this will also be returned if to is not found or if they vote for themselves.
     200: Success.
     """
+
+    if request.method == "OPTIONS":
+        return Response()
+
     service, key, to, _from, password = get_params(["service_name", "service_key", "to", "from", "password"])
+
     with DatabaseManager() as db:
         result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
         service_obj = result.fetchone()
@@ -76,6 +83,7 @@ def vote() -> Response:
     return Response("Success", 200)
 
 
+@allow_cors(host="*")
 def get_score() -> Response:
     """
     Message Structure:
@@ -97,6 +105,10 @@ def get_score() -> Response:
         "score": float
     }
     """
+
+    if request.method == "OPTIONS":
+        return Response()
+
     service, key, _for, _from, password = get_params(["service_name", "service_key", "for", "from", "password"])
     if _for == _from:
             return Response("Username or Password is incorrect.", 403)
