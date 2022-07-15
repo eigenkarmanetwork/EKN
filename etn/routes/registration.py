@@ -1,7 +1,7 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
 from etn.helpers import get_params
-from flask import Response
+from flask import Response, request
 import hashlib
 import secrets
 
