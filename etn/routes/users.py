@@ -1,6 +1,6 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
-from etn.helpers import get_params, verify_credentials
+from etn.helpers import get_params, verify_credentials, verify_credentials_hash
 from flask import Response, request
 from werkzeug.datastructures import Headers
 import hashlib
@@ -19,7 +19,7 @@ def verify_credentials_route():
     }
     Returns:
     403: Username or Password is incorrect.
-    200: Success.
+    200: Password Hash (SHA512)
     """
 
     if request.method == "OPTIONS" :
@@ -28,6 +28,33 @@ def verify_credentials_route():
     username, password = get_params(["username", "password"])
 
     user = verify_credentials(username, password)
+    if not user:
+        return Response("Username or Password is incorrect.", 403)
+
+    return Response(user["password"], 200)
+
+
+@allow_cors
+def verify_credentials_hash_route():
+    """
+    Used to verify ETN user credentials for website login, or other purposes.
+
+    Message Structure:
+    {
+        "username": str
+        "password": str
+    }
+    Returns:
+    403: Username or Password is incorrect.
+    200: Success.
+    """
+
+    if request.method == "OPTIONS" :
+        return Response()
+
+    username, password = get_params(["username", "password"])
+
+    user = verify_credentials_hash(username, password)
     if not user:
         return Response("Username or Password is incorrect.", 403)
 

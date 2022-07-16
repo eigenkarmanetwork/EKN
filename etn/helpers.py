@@ -127,6 +127,22 @@ def verify_credentials(username: str, password: str) -> Optional[sqlite3.Row]:
         return user
 
 
+def verify_credentials_hash(username: str, password_hash: str) -> Optional[sqlite3.Row]:
+    """
+    Verifies an ETN username and password hash.
+    """
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        user = result.fetchone()
+        if not user:
+            return None
+
+        if not password_hash == user["password"]:
+            return None
+        return user
+
+
 def verify_service(service: str, key: str) -> Optional[sqlite3.Row]:
     """
     Verifies a service's credentials.
