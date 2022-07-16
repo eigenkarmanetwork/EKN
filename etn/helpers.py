@@ -98,7 +98,7 @@ def get_votes(_for: int, _from: int) -> float:
     print("Total Votes:")
     print(total_votes - for_user_votes)
     print("Score: ")
-    score = scores[for_index] * (total_votes - for_user_votes)
+    score = round(scores[for_index] * (total_votes - for_user_votes), 2)
     if score == -0.0:
         score = 0.0
     print(score)
