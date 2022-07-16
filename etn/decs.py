@@ -1,5 +1,5 @@
 from werkzeug.datastructures import Headers
-from flask import Response
+from flask import Response, request
 from typing import Callable, Optional
 import functools
 
@@ -11,7 +11,10 @@ def allow_cors(
     def cors_decorator(func: Callable[..., Response]) -> Callable[..., Response]:
         @functools.wraps(func)
         def cors_wrapper(*args, **kwargs) -> Response:
-            if hosts is None:
+            try:
+                if not hosts is None:
+                    hosts = ["http://www.eigentrust.net", "http://eigentrust.net"]
+            except Exception:
                 hosts = ["http://www.eigentrust.net", "http://eigentrust.net"]
             if request.method == "OPTIONS" and not custom_options:
                 response = Response()
