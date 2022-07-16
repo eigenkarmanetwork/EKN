@@ -1,7 +1,9 @@
 from etn.database import DatabaseManager
 from flask import request
-from typing import Any
+from typing import Any, Optional
 import numpy as np
+import hashlib
+import sqlite3
 
 
 NETWORK_SIZE_LIMIT = 10_000
@@ -103,3 +105,59 @@ def get_votes(_for: int, _from: int) -> float:
         score = 0.0
     print(score)
     return score
+
+
+def verify_credentials(username: str, password: str) -> Optional[sqlite3.Row]:
+    """
+    Verifies an ETN username and password.
+    """
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        user = result.fetchone()
+        if not user:
+            return None
+
+        salt = user["salt"]
+        sha512 = hashlib.new("sha512")
+        sha512.update(f"{password}:{salt}".encode("utf8"))
+        password_hash = sha512.hexdigest()
+        if not password_hash == user["password"]:
+            return None
+        return user
+
+
+def verify_service(service: str, key: str) -> Optional[sqlite3.Row]:
+    """
+    Verifies a service's credentials.
+    """
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
+        service_obj = result.fetchone()
+        if not service_obj:
+            return None
+        salt = service_obj["salt"]
+        sha512 = hashlib.new("sha512")
+        sha512.update(f"{key}:{salt}".encode("utf8"))
+        key_hash = sha512.hexdigest()
+        if key_hash != service_obj["key"]:
+            return None
+        return service_obj
+
+def resolve_service_username(service_id: int, service_user: str) -> Optional[sqlite3.Row]:
+    """
+    Gets an ETN username from a service id and the username on the service.
+    """
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM connections WHERE service=:service_id AND service_user=:from",
+                            {"service_id": service_id, "from": _from})
+        service_user = result.fetchone()
+        if not service_user:
+            return None
+        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": service_user["user"]})
+        user = result.fetchone()
+        if not user:
+            return None
+        return user

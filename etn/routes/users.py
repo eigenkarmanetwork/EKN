@@ -1,13 +1,14 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
-from etn.helpers import get_params
+from etn.helpers import get_params, verify_credentials
 from flask import Response, request
 from werkzeug.datastructures import Headers
 import hashlib
+import json
 
 
 @allow_cors
-def verify_credentials():
+def verify_credentials_route():
     """
     Used to verify ETN user credentials for website login, or other purposes.
 
@@ -26,17 +27,56 @@ def verify_credentials():
 
     username, password = get_params(["username", "password"])
 
+    user = verify_credentials(username, password)
+    if not user:
+        return Response("Username or Password is incorrect.", 403)
+
+    return Response("Success.", 200)
+
+
+@allow_cors
+def gdpr_view():
+    """
+    Used to pull all data we have on a user in compliance with GDPR.
+
+    Message Structure:
+    {
+        "username": str
+        "password": str
+    }
+    Returns:
+    403: Username or Password is incorrect.
+    200: JSON List of every row of data.
+    """
+
+    if request.method == "OPTIONS" :
+        return Response()
+
+    username, password = get_params(["username", "password"])
+
+    user = verify_credentials(username, password)
+    if not user:
+        return Response("Username or Password is incorrect.", 403)
+
+    rows = []
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
-        user = result.fetchone()
-        if not user:
-            return Response("Username or Password is incorrect.", 403)
+        row = {}
+        for key in user.keys():
+            row[key] = user[key]
+        rows.append(row)
 
-        salt = user["salt"]
-        sha512 = hashlib.new("sha512")
-        sha512.update(f"{password}:{salt}".encode("utf8"))
-        password_hash = sha512.hexdigest()
-        if not password_hash == user["password"]:
-            return Response("Username or Password is incorrect.", 403)
+        result = db.execute("SELECT * FROM connections WHERE user=:id", {"id": user["id"]})
+        for raw_row in result.fetchall():
+            row = {}
+            for key in raw_row.keys():
+                row[key] = raw_row[key]
+            rows.append(row)
 
-        return Response("Success.", 200)
+        result = db.execute("SELECT * FROM votes WHERE user_to=:id OR user_from=:id", {"id": user["id"]})
+        for raw_row in result.fetchall():
+            row = {}
+            for key in raw_row.keys():
+                row[key] = raw_row[key]
+            rows.append(row)
+
+    return Response(json.dumps(rows))
