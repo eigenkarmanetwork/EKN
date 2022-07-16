@@ -21,10 +21,6 @@ def verify_credentials_route():
     403: Username or Password is incorrect.
     200: Password Hash (SHA512)
     """
-
-    if request.method == "OPTIONS" :
-        return Response()
-
     username, password = get_params(["username", "password"])
 
     user = verify_credentials(username, password)
@@ -48,10 +44,6 @@ def verify_credentials_hash_route():
     403: Username or Password is incorrect.
     200: Success.
     """
-
-    if request.method == "OPTIONS" :
-        return Response()
-
     username, password = get_params(["username", "password"])
 
     user = verify_credentials_hash(username, password)
@@ -75,10 +67,6 @@ def gdpr_view():
     403: Username or Password is incorrect.
     200: JSON List of every row of data.
     """
-
-    if request.method == "OPTIONS" :
-        return Response()
-
     username, password = get_params(["username", "password"])
 
     user = verify_credentials(username, password)

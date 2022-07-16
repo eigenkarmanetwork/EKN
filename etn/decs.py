@@ -1,15 +1,29 @@
 from werkzeug.datastructures import Headers
 from flask import Response
-from typing import Callable
+from typing import Callable, Optional
 import functools
 
 
-def allow_cors(_func = None, *, host = "http://www.eigentrust.net") -> Callable[..., Response | Callable[..., Response]]:
+def allow_cors(
+    _func=None, *, hosts: Optional[list] = None, custom_options=False
+) -> Callable[..., Response | Callable[..., Response]]:
+
     def cors_decorator(func: Callable[..., Response]) -> Callable[..., Response]:
         @functools.wraps(func)
         def cors_wrapper(*args, **kwargs) -> Response:
-            response = func(*args, **kwargs)
+            if hosts is None:
+                hosts = ["http://www.eigentrust.net", "http://eigentrust.net"]
+            if request.method == "OPTIONS" and not custom_options:
+                response = Response()
+            else:
+                response = func(*args, **kwargs)
             if response.headers.get("Access-Control-Allow-Origin") is None:
+                if "*" in hosts:
+                    host = "*"
+                elif request.headers.get("Origin") in hosts:
+                    host = request.headers.get("Origin")
+                else:
+                    host = hosts[0]
                 response.headers.add("Access-Control-Allow-Origin", host)
             if response.headers.get("Access-Control-Allow-Headers") is None:
                 response.headers.add("Access-Control-Allow-Headers", "Content-type")
@@ -23,6 +37,7 @@ def allow_cors(_func = None, *, host = "http://www.eigentrust.net") -> Callable[
             else:
                 response.headers.add("Vary", "Origin")
             return response
+
         return cors_wrapper
 
     if _func is None:
