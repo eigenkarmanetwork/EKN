@@ -87,7 +87,7 @@ def gdpr_view():
                 row[key] = raw_row[key]
             rows.append(row)
 
-        result = db.execute("SELECT * FROM votes WHERE user_to=:id OR user_from=:id", {"id": user["id"]})
+        result = db.execute("SELECT * FROM votes WHERE user_from=:id", {"id": user["id"]})
         for raw_row in result.fetchall():
             row = {}
             for key in raw_row.keys():
