@@ -5,6 +5,7 @@ import etn.routes.voting
 
 gdpr_view = users.gdpr_view
 get_score = voting.get_score
+get_vote_count = voting.get_vote_count
 register_connection = registration.register_connection
 register_service = registration.register_service
 register_user = registration.register_user

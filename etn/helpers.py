@@ -161,18 +161,21 @@ def verify_service(service: str, key: str) -> Optional[sqlite3.Row]:
             return None
         return service_obj
 
+
 def resolve_service_username(service_id: int, service_user: str) -> Optional[sqlite3.Row]:
     """
     Gets an ETN username from a service id and the username on the service.
     """
 
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM connections WHERE service=:service_id AND service_user=:from",
-                            {"service_id": service_id, "from": _from})
-        service_user = result.fetchone()
-        if not service_user:
+        result = db.execute(
+            "SELECT * FROM connections WHERE service=:service_id AND service_user=:service_user",
+            {"service_id": service_id, "service_user": service_user},
+        )
+        service_user_obj = result.fetchone()
+        if not service_user_obj:
             return None
-        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": service_user["user"]})
+        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": service_user_obj["user"]})
         user = result.fetchone()
         if not user:
             return None

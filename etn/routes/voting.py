@@ -64,6 +64,60 @@ def vote() -> Response:
 
 
 @allow_cors(hosts=["*"])
+def get_vote_count() -> Response:
+    """
+    Get how many times a user has voted for someone. This is NOT their trust score.
+
+    Message Structure:
+    {
+        "service_name": str (Service's name)
+        "service_key": str (Service's key)
+        "for": str (Username on Service)
+        "from": str (Username on Service)
+        "password": str (Password on ETN)
+    }
+
+    Returns:
+    400: User cannot view themselves.
+    403: Username or Password is incorrect.
+    403: Service name or key is incorrect.
+    404: 'for' is not connected to this service.
+    200: Success.
+    """
+    service, key, _for, _from, password = get_params(
+        ["service_name", "service_key", "for", "from", "password"]
+    )
+
+    if _from == _for:
+        return Response("User cannot view themselves.", 400)
+
+    service_obj = verify_service(service, key)
+    if not service_obj:
+        return Response("Service name or key is incorrect.", 403)
+    user = resolve_service_username(service_obj["id"], _from)
+    if not user:
+        return Response("Username or Password is incorrect.", 403)
+    from_user = verify_credentials(user["username"], password)
+    if not from_user:
+        return Response("Username or Password is incorrect.", 403)
+    for_user = resolve_service_username(service_obj["id"], _for)
+    if not for_user:
+        return Response("'for' is not connected to this service.", 404)
+
+    response = {"for": _for, "from": _from, "votes": 0}
+    with DatabaseManager() as db:
+        result = db.execute(
+            "SELECT * FROM votes WHERE user_from=:from AND user_to=:to",
+            {"from": from_user["id"], "to": for_user["id"]},
+        )
+        current = result.fetchone()
+        if current:
+            response["votes"] = current["count"]
+
+    return Response(json.dumps(response), 200)
+
+
+@allow_cors(hosts=["*"])
 def get_score() -> Response:
     """
     Message Structure:
