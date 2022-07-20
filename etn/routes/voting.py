@@ -82,7 +82,12 @@ def get_vote_count() -> Response:
     403: Username or Password is incorrect.
     403: Service name or key is incorrect.
     404: 'for' is not connected to this service.
-    200: Success.
+    200: JSON:
+    {
+        "for": str (Username Provided)
+        "from": str (Username Provided)
+        "votes": int
+    }
     """
     service, key, _for, _from, password = get_params(
         ["service_name", "service_key", "for", "from", "password"]
