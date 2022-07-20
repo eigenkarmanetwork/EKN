@@ -135,8 +135,10 @@ def get_score() -> Response:
     }
 
     Returns:
-    404: Service was not found.  # This will be returned if the name or key is incorrect.
-    403: Username or Password is incorrect.  # For security reasons this will also be returned if for is not found or if they lookup themselves.
+    400: User cannot view themselves.
+    403: Username or Password is incorrect.
+    403: Service name or key is incorrect.
+    404: 'for' is not connected to this service.
     200: JSON:
     {
         "for": str (Username Provided)
@@ -148,52 +150,21 @@ def get_score() -> Response:
         ["service_name", "service_key", "for", "from", "password"]
     )
     if _for == _from:
+        return Response("User cannot view themselves.", 400)
+
+    service_obj = verify_service(service, key)
+    if not service_obj:
+        return Response("Service name or key is incorrect.", 403)
+    user = resolve_service_username(service_obj["id"], _from)
+    if not user:
         return Response("Username or Password is incorrect.", 403)
-    with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
-        service_obj = result.fetchone()
-        if not service_obj:
-            return Response("Service was not found.", 404)
-        salt = service_obj["salt"]
-        sha512 = hashlib.new("sha512")
-        sha512.update(f"{key}:{salt}".encode("utf8"))
-        key_hash = sha512.hexdigest()
-        if key_hash != service_obj["key"]:
-            return Response("Service was not found.", 404)
-        result = db.execute(
-            "SELECT * FROM connections WHERE service=:service_id AND service_user=:from",
-            {"service_id": service_obj["id"], "from": _from},
-        )
-        from_service_user = result.fetchone()
-        if not from_service_user:
-            print("From user doesn't exist for service")
-            return Response("Username or Password is incorrect.", 403)
-        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": from_service_user["user"]})
-        user = result.fetchone()
-        if not user:
-            print("User doesn't exist in ETN")
-            return Response("Username or Password is incorrect.", 403)
-    salt = user["salt"]
-    sha512 = hashlib.new("sha512")
-    sha512.update(f"{password}:{salt}".encode("utf8"))
-    password_hash = sha512.hexdigest()
-    if password_hash != user["password"]:
-        print("Password is incorrect")
+    from_user = verify_credentials(user["username"], password)
+    if not from_user:
         return Response("Username or Password is incorrect.", 403)
-    with DatabaseManager() as db:
-        result = db.execute(
-            "SELECT * FROM connections WHERE service=:service_id and service_user=:for",
-            {"service_id": service_obj["id"], "for": _for},
-        )
-        for_service_user = result.fetchone()
-        if not for_service_user:
-            print("For user doesn't exist for service")
-            return Response("Username or Password is incorrect.", 403)
-        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": for_service_user["user"]})
-        for_user = result.fetchone()
-        if not for_user:
-            print("For user doesn't exist in ETN")
-            return Response("Username or Password is incorrect.", 403)
-    score = get_votes(for_user["id"], user["id"])
+    for_user = resolve_service_username(service_obj["id"], _for)
+    if not for_user:
+        return Response("'for' is not connected to this service.", 404)
+
+    score = get_votes(for_user["id"], from_user["id"])
     response = {"for": _for, "from": _from, "score": score}
     return Response(json.dumps(response), 200)
