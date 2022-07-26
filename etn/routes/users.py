@@ -33,6 +33,8 @@ def verify_credentials_route():
 @allow_cors
 def verify_credentials_hash_route():
     """
+    DEPRECATED
+
     Used to verify ETN user credentials for website login, or other purposes.
 
     Message Structure:
@@ -62,14 +64,15 @@ def gdpr_view():
     {
         "username": str
         "password": str
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
     Returns:
     403: Username or Password is incorrect.
     200: JSON List of every row of data.
     """
-    username, password = get_params(["username", "password"])
+    username, password, password_type = get_params(["username", "password", "password_type"])
 
-    user = verify_credentials(username, password)
+    user = verify_credentials(username, password, password_type)
     if not user:
         return Response("Username or Password is incorrect.", 403)
 

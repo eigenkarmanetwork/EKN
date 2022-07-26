@@ -107,9 +107,26 @@ def get_votes(_for: int, _from: int) -> float:
     return score
 
 
-def verify_credentials(username: str, password: str) -> Optional[sqlite3.Row]:
+def verify_credentials(
+    username: str, password: str, password_type: PASSWORD_TYPE = None, service_id: Optional[int] = None
+) -> Optional[sqlite3.Row]:
     """
-    Verifies an ETN username and password.
+    Verifies an ETN username and password/key.
+    """
+
+    if password_type is None or password_type == "raw_password":
+        return verify_credentials_raw(username, password)
+    elif password_type == "password_hash":
+        return verify_credentials_raw(username, password)
+    elif password_type == "connection_key":
+        return verify_service_username(service_id, username, password)
+    else:
+        return None
+
+
+def verify_credentials_raw(username: str, password: str) -> Optional[sqlite3.Row]:
+    """
+    Verifies an ETN username and raw password.
     """
 
     with DatabaseManager() as db:
@@ -174,6 +191,28 @@ def resolve_service_username(service_id: int, service_user: str) -> Optional[sql
         )
         service_user_obj = result.fetchone()
         if not service_user_obj:
+            return None
+        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": service_user_obj["user"]})
+        user = result.fetchone()
+        if not user:
+            return None
+        return user
+
+
+def verify_service_username(service_id: int, service_user: str, key: str) -> Optional[sqlite3.Row]:
+    """
+    Gets an ETN username from a service id and the username on the service.
+    """
+
+    with DatabaseManager() as db:
+        result = db.execute(
+            "SELECT * FROM connections WHERE service=:service_id AND service_user=:service_user",
+            {"service_id": service_id, "service_user": service_user},
+        )
+        service_user_obj = result.fetchone()
+        if not service_user_obj:
+            return None
+        if service_user_obj["key"] is None or service_user_obj["key"] != key:
             return None
         result = db.execute("SELECT * FROM users WHERE id=:id", {"id": service_user_obj["user"]})
         user = result.fetchone()
