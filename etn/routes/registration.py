@@ -1,6 +1,6 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
-from etn.helpers import get_params
+from etn.helpers import get_params, verify_service, verify_credentials
 from flask import Response, request
 import hashlib
 import secrets
@@ -29,10 +29,15 @@ def register_user() -> Response:
         result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
         if result.fetchone():
             return Response("Username is not available.", 409)  # 409: Conflict
-        db.execute("INSERT INTO users (username, password, salt) VALUES (?, ?, ?)", (username, password_hash, salt))
+        db.execute(
+            "INSERT INTO users (username, password, salt) VALUES (?, ?, ?)", (username, password_hash, salt)
+        )
         result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
         id = result.fetchone()["id"]
-        db.execute("INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)", (db.etn_service_id, username, id))
+        db.execute(
+            "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
+            (db.etn_service_id, username, id),
+        )
     return Response("Registration Successful", 200)
 
 
@@ -66,6 +71,8 @@ def register_service() -> Response:
 @allow_cors(hosts=["*"])
 def register_connection() -> Response:
     """
+    Register's a connection, or updates the connection if it already exists.
+
     Message Structure:
     {
         "service_name": str (Service's name)
@@ -73,38 +80,40 @@ def register_connection() -> Response:
         "service_user": str (Username on Service)
         "username": str (Username on ETN)
         "password": str (Password on ETN)
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
 
     Returns:
-    404: Service was not found.  # This will be returned if the name or key is incorrect.
+    403: Service name or key is incorrect.
     403: Username or Password is incorrect.
-    200: Success.
+    200: Connection Successful.
     """
-    service, key, service_user, username, password = get_params(["service_name", "service_key", "service_user", "username", "password"])
+    service, key, service_user, username, password, password_type = get_params(
+        ["service_name", "service_key", "service_user", "username", "password", "password_type"]
+    )
 
-    with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
-        service_obj = result.fetchone()
-        if not service_obj:
-            return Response("Service was not found.", 404)
-        salt = service_obj["salt"]
-        sha512 = hashlib.new("sha512")
-        sha512.update(f"{key}:{salt}".encode("utf8"))
-        key_hash = sha512.hexdigest()
-        if key_hash != service_obj["key"]:
-            return Response("Service was not found.", 404)
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
-        user = result.fetchone()
-        if not user:
-            return Response("Username or Password is incorrect.", 403)
+    service_obj = verify_service(service, key)
+    if not service_obj:
+        return Response("Service name or key is incorrect.", 403)
 
-    salt = user["salt"]
-    sha512 = hashlib.new("sha512")
-    sha512.update(f"{password}:{salt}".encode("utf8"))
-    password_hash = sha512.hexdigest()
-    if password_hash != user["password"]:
+    user = verify_credentials(username, password, password_type, service_obj["id"])
+    if not user:
         return Response("Username or Password is incorrect.", 403)
 
     with DatabaseManager() as db:
-        db.execute("INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)", (service_obj["id"], service_user, user["id"]))
-    return Response("Connection Successful", 200)
+        result = db.execute(
+            "SELECT * FROM connections WHERE service=:service_id AND user=:user_id",
+            {"service_id": service_obj["id"], "user_id": user["id"]},
+        )
+        if result.fetchone():
+            # Connection with this service already exists, updating.
+            db.execute(
+                "UPDATE connections SET service_user=:service_user WHERE service=:service_id AND user=:user_id",
+                {"service_user": service_user, "service_id": service_obj["id"], "user_id": user["id"]},
+            )
+        else:
+            db.execute(
+                "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
+                (service_obj["id"], service_user, user["id"]),
+            )
+    return Response("Connection Successful.", 200)

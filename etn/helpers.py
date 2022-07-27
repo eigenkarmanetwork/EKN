@@ -1,4 +1,5 @@
 from etn.database import DatabaseManager
+from etn.types import PASSWORD_TYPE
 from flask import request
 from typing import Any, Optional
 import numpy as np
@@ -119,6 +120,8 @@ def verify_credentials(
     elif password_type == "password_hash":
         return verify_credentials_raw(username, password)
     elif password_type == "connection_key":
+        if not service_id:
+            return None
         return verify_service_username(service_id, username, password)
     else:
         return None

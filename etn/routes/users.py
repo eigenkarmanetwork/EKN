@@ -16,14 +16,15 @@ def verify_credentials_route():
     {
         "username": str
         "password": str
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
     Returns:
     403: Username or Password is incorrect.
     200: Password Hash (SHA512)
     """
-    username, password = get_params(["username", "password"])
+    username, password, password_type = get_params(["username", "password", "password_type"])
 
-    user = verify_credentials(username, password)
+    user = verify_credentials(username, password, password_type)
     if not user:
         return Response("Username or Password is incorrect.", 403)
 
@@ -34,6 +35,7 @@ def verify_credentials_route():
 def verify_credentials_hash_route():
     """
     DEPRECATED
+    Use verify_credentials instead.
 
     Used to verify ETN user credentials for website login, or other purposes.
 

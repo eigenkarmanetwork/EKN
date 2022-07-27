@@ -1,7 +1,7 @@
-import etn.routes.misc
-import etn.routes.registration
-import etn.routes.users
-import etn.routes.voting
+import etn.routes.misc as misc
+import etn.routes.registration as registration
+import etn.routes.users as users
+import etn.routes.voting as voting
 
 gdpr_view = users.gdpr_view
 get_score = voting.get_score
