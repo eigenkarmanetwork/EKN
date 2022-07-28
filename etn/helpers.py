@@ -5,6 +5,7 @@ from typing import Any, Optional
 import numpy as np
 import hashlib
 import sqlite3
+import time
 
 
 NETWORK_SIZE_LIMIT = 10_000
@@ -118,11 +119,18 @@ def verify_credentials(
     if password_type is None or password_type == "raw_password":
         return verify_credentials_raw(username, password)
     elif password_type == "password_hash":
-        return verify_credentials_raw(username, password)
+        return verify_credentials_hash(username, password)
     elif password_type == "connection_key":
         if not service_id:
             return None
         return verify_service_username(service_id, username, password)
+    elif password_type == "session_key":
+        if service_id:
+            user = resolve_service_username(service_id, username)
+            if not user:
+                return None
+            username = user["username"]
+        return verify_session_key(username, password)
     else:
         return None
 
@@ -159,6 +167,30 @@ def verify_credentials_hash(username: str, password_hash: str) -> Optional[sqlit
             return None
 
         if not password_hash == user["password"]:
+            return None
+        return user
+
+
+def verify_session_key(username: str, key: str) -> Optional[sqlite3.Row]:
+    """
+    Verifies an ETN user id and session key.
+    """
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        user = result.fetchone()
+        if not user:
+            return None
+        if user["security"] != 1:
+            return None
+        result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+        row = result.fetchone()
+        if not row:
+            return None
+        if row["expires"] < int(time.time()):
+            return None
+
+        if key != row["key"]:
             return None
         return user
 
