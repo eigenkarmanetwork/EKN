@@ -17,7 +17,7 @@ def get_params(params: list[str]) -> Any:
         message = request.get_json()
         assert isinstance(message, dict)
         for param in params:
-            if param in params:
+            if param in message:
                 ret.append(message[param])
             else:
                 ret.append(None)
