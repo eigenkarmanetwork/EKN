@@ -253,4 +253,6 @@ def verify_service_username(service_id: int, service_user: str, key: str) -> Opt
         user = result.fetchone()
         if not user:
             return None
+        if user["security"] != 0:
+            return None
         return user
