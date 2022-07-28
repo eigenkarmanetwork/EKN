@@ -2,8 +2,6 @@ from etn.database import DatabaseManager
 from etn.decs import allow_cors
 from etn.helpers import get_params, verify_credentials, verify_credentials_hash
 from flask import Response, request
-from werkzeug.datastructures import Headers
-import hashlib
 import json
 import secrets
 import time
@@ -41,7 +39,7 @@ def verify_credentials_route():
                     gen_key = False
                     session_key = row["key"]
                     expires = row["expires"]
-            if gen_key == True:
+            if gen_key:
                 session_key = secrets.token_hex(16)
                 expires = int(time.time()) + 86_400
                 db.execute(

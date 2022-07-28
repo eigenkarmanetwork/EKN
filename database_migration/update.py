@@ -6,7 +6,7 @@ from database_migration.versions import (
     v2_1_0,
 )
 from etn import types
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import warnings
 
 if TYPE_CHECKING:

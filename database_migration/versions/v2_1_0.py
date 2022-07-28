@@ -1,6 +1,4 @@
 from typing import TYPE_CHECKING
-import hashlib
-import secrets
 
 if TYPE_CHECKING:
     from etn.database import DatabaseManager

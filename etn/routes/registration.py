@@ -1,7 +1,7 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
 from etn.helpers import get_params, verify_service, verify_credentials
-from flask import Response, request
+from flask import Response
 import hashlib
 import secrets
 
@@ -86,7 +86,7 @@ def register_connection() -> Response:
     Returns:
     403: Service name or key is incorrect.
     403: Username or Password is incorrect.
-    200: Connection Successful.
+    200: Connection key if security is 0, otherwise nothing.
     """
     service, key, service_user, username, password, password_type = get_params(
         ["service_name", "service_key", "service_user", "username", "password", "password_type"]
@@ -105,15 +105,24 @@ def register_connection() -> Response:
             "SELECT * FROM connections WHERE service=:service_id AND user=:user_id",
             {"service_id": service_obj["id"], "user_id": user["id"]},
         )
+        if user["security"] == 0:
+            connection_key = secrets.token_hex(16)
+        else:
+            connection_key = None
         if result.fetchone():
             # Connection with this service already exists, updating.
             db.execute(
-                "UPDATE connections SET service_user=:service_user WHERE service=:service_id AND user=:user_id",
-                {"service_user": service_user, "service_id": service_obj["id"], "user_id": user["id"]},
+                "UPDATE connections SET service_user=:service_user, key=:key WHERE service=:service_id AND user=:user_id",
+                {
+                    "service_user": service_user,
+                    "key": connection_key,
+                    "service_id": service_obj["id"],
+                    "user_id": user["id"],
+                },
             )
         else:
             db.execute(
-                "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
-                (service_obj["id"], service_user, user["id"]),
+                "INSERT INTO connections (service, service_user, user, key) VALUES (?, ?, ?, ?)",
+                (service_obj["id"], service_user, user["id"], connection_key),
             )
-    return Response("Connection Successful.", 200)
+    return Response(connection_key if connection_key else "", 200)

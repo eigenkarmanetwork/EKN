@@ -1,8 +1,7 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
 from etn.helpers import get_params, get_votes, resolve_service_username, verify_credentials, verify_service
-from flask import Response, request
-import hashlib
+from flask import Response
 import json
 
 
