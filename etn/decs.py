@@ -1,4 +1,3 @@
-from werkzeug.datastructures import Headers
 from flask import Response, request
 from typing import Callable, Optional
 import functools
@@ -7,12 +6,11 @@ import functools
 def allow_cors(
     _func=None, *, hosts: Optional[list] = None, custom_options=False
 ) -> Callable[..., Response | Callable[..., Response]]:
-
     def cors_decorator(func: Callable[..., Response]) -> Callable[..., Response]:
         @functools.wraps(func)
         def cors_wrapper(*args, **kwargs) -> Response:
             try:
-                if not hosts is None:
+                if hosts is not None:
                     hosts = ["http://www.eigentrust.net", "http://eigentrust.net"]
             except Exception:
                 hosts = ["http://www.eigentrust.net", "http://eigentrust.net"]
@@ -24,7 +22,7 @@ def allow_cors(
                 if "*" in hosts:
                     host = "*"
                 elif request.headers.get("Origin") in hosts:
-                    host = request.headers.get("Origin")
+                    host = request.headers.get("Origin")  # type: ignore
                 else:
                     host = hosts[0]
                 response.headers.add("Access-Control-Allow-Origin", host)
@@ -32,6 +30,7 @@ def allow_cors(
                 response.headers.add("Access-Control-Allow-Headers", "Content-type")
             if response.headers.get("Vary"):
                 vary = response.headers.get("Vary")
+                assert vary is not None
                 varying = vary.split(", ")
                 if "Origin" not in varying:
                     vary += ", Origin"
