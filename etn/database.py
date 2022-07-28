@@ -6,6 +6,7 @@ import threading
 
 
 class DatabaseManager:
+
     def __init__(self):
         self.path = "database.db"
         self.lock = threading.Lock()
@@ -52,42 +53,30 @@ class DatabaseManager:
     def _create_database(self) -> None:
         conn = sqlite3.connect(self.path)
         cur = conn.cursor()
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS votes (user_from INTEGER, user_to INTEGER, category TEXT DEFAULT 'general', count INTEGER)"
-        )
-        cur.execute(
-            """CREATE TABLE IF NOT EXISTS users (
+        cur.execute("CREATE TABLE IF NOT EXISTS votes (user_from INTEGER, user_to INTEGER, category TEXT DEFAULT 'general', count INTEGER)")
+        cur.execute("""CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
             password TEXT,
             salt TEXT,
             security TEXT CHECK(security in (0, 1, 2)) DEFAULT 2
-        )"""
-        )
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, key TEXT, salt TEXT)"
-        )
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER, key TEXT DEFAULT NULL)"
-        )
+        )""")
+        cur.execute("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, key TEXT, salt TEXT)")
+        cur.execute("CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER, key TEXT DEFAULT NULL)")
         cur.execute("CREATE TABLE IF NOT EXISTS etn_settings (setting TEXT PRIMARY KEY UNIQUE, value TEXT)")
         cur.execute("CREATE TABLE IF NOT EXISTS categories (category TEXT PRIMARY KEY UNIQUE)")
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS session_keys (user INTEGER PRIMARY KEY, key TEXT, expires INTEGER)"
-        )
         conn.commit()
-        cur.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '2.1.0')")
+        cur.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '2.0.1')")
         cur.execute("INSERT INTO categories (category) VALUES ('general')")
-        cur.execute(
-            "INSERT INTO services (name, key, salt) VALUES (?, ?, ?)",
-            (
-                "ETN",
-                "833b334bb52dded02beb81bffea9f1e55f84db86363b32403d1e76"
-                + "254dfb798499f978c944519974faeeb98029bbc3f92fcf0eb7179d"
-                + "9b3ab95d12cc1a422319",
-                "dac0a578446b",
-            ),
-        )
+        cur.execute("INSERT INTO services (name, key, salt) VALUES (?, ?, ?)",
+                     (
+                      "ETN",
+                      "833b334bb52dded02beb81bffea9f1e55f84db86363b32403d1e76" +
+                      "254dfb798499f978c944519974faeeb98029bbc3f92fcf0eb7179d" +
+                      "9b3ab95d12cc1a422319",
+                      "dac0a578446b"
+                     )
+                    )
         conn.commit()
         cur.close()
         conn.close()
