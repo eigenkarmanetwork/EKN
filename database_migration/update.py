@@ -1,6 +1,12 @@
-from database_migration.versions import v1_0_1, v1_1_0, v2_0_0, v2_0_1
+from database_migration.versions import (
+    v1_0_1,
+    v1_1_0,
+    v2_0_0,
+    v2_0_1,
+    v2_1_0,
+)
 from etn import types
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import warnings
 
 if TYPE_CHECKING:
@@ -12,6 +18,7 @@ main_database_versions: types.DATABASE_VERSIONS = {
     "1.1.0": v1_1_0.update,
     "2.0.0": v2_0_0.update,
     "2.0.1": v2_0_1.update,
+    "2.1.0": v2_1_0.update,
 }
 
 
@@ -22,7 +29,7 @@ def update_database(database: "DatabaseManager") -> None:
         warnings.warn("Database version doesn't exist in dictionary", Warning)
         return
     index = versions.index(version)
-    for v in versions[index + 1:]:
+    for v in versions[index + 1 :]:
         print(f"Updating database from v{version} to v{v}")
         if main_database_versions[v]:  # If not None
             main_database_versions[v](database)  # type: ignore
@@ -35,4 +42,4 @@ def get_version(database: "DatabaseManager") -> str:
             return "1.0.0"
         result = db.execute("SELECT value FROM etn_settings WHERE setting='version'")
         value = result.fetchone()
-        return value['value']
+        return value["value"]

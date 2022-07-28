@@ -2,9 +2,9 @@ from etn.database import DatabaseManager
 from etn.decs import allow_cors
 from etn.helpers import get_params, verify_credentials, verify_credentials_hash
 from flask import Response, request
-from werkzeug.datastructures import Headers
-import hashlib
 import json
+import secrets
+import time
 
 
 @allow_cors
@@ -16,23 +16,60 @@ def verify_credentials_route():
     {
         "username": str
         "password": str
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
     Returns:
     403: Username or Password is incorrect.
     200: Password Hash (SHA512)
     """
-    username, password = get_params(["username", "password"])
+    username, password, password_type = get_params(["username", "password", "password_type"])
 
-    user = verify_credentials(username, password)
+    user = verify_credentials(username, password, password_type)
     if not user:
         return Response("Username or Password is incorrect.", 403)
 
-    return Response(user["password"], 200)
+    resp = Response(user["password"], 200)
+    if user["security"] == 1:
+        with DatabaseManager() as db:
+            result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+            row = result.fetchone()
+            gen_key = True
+            if row:
+                if row["expires"] > int(time.time()):
+                    gen_key = False
+                    session_key = row["key"]
+                    expires = row["expires"]
+            if gen_key:
+                session_key = secrets.token_hex(16)
+                expires = int(time.time()) + 86_400
+                db.execute(
+                    "INSERT INTO session_keys (user, key, expires) VALUES (?, ?, ?)",
+                    (user["id"], session_key, expires),
+                )
+
+        resp.set_cookie("session_key", session_key, expires=expires)
+
+    return resp
+
+
+@allow_cors
+def get_session_key():
+    """
+    Get's the current session key from cookies if it exists, otherwise returns 404.
+    """
+
+    key = request.cookies.get("session_key")
+    if key is None:
+        return Response("", 404)
+    return Response(key)
 
 
 @allow_cors
 def verify_credentials_hash_route():
     """
+    DEPRECATED
+    Use verify_credentials instead.
+
     Used to verify ETN user credentials for website login, or other purposes.
 
     Message Structure:
@@ -62,14 +99,15 @@ def gdpr_view():
     {
         "username": str
         "password": str
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
     Returns:
     403: Username or Password is incorrect.
     200: JSON List of every row of data.
     """
-    username, password = get_params(["username", "password"])
+    username, password, password_type = get_params(["username", "password", "password_type"])
 
-    user = verify_credentials(username, password)
+    user = verify_credentials(username, password, password_type)
     if not user:
         return Response("Username or Password is incorrect.", 403)
 
