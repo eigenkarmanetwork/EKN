@@ -1,8 +1,7 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
 from etn.helpers import get_params, get_votes, resolve_service_username, verify_credentials, verify_service
-from flask import Response, request
-import hashlib
+from flask import Response
 import json
 
 
@@ -16,6 +15,7 @@ def vote() -> Response:
         "to": str (Username on Service)
         "from": str (Username on Service)
         "password": str (Password on ETN)
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
 
     Returns:
@@ -25,7 +25,9 @@ def vote() -> Response:
     404: 'to' is not connected to this service.
     200: Success.
     """
-    service, key, to, _from, password = get_params(["service_name", "service_key", "to", "from", "password"])
+    service, key, to, _from, password, password_type = get_params(
+        ["service_name", "service_key", "to", "from", "password", "password_type"]
+    )
 
     if _from == to:
         return Response("User cannot vote for themselves.", 400)
@@ -36,7 +38,7 @@ def vote() -> Response:
     user = resolve_service_username(service_obj["id"], _from)
     if not user:
         return Response("Username or Password is incorrect.", 403)
-    from_user = verify_credentials(user["username"], password)
+    from_user = verify_credentials(user["username"], password, password_type, service_obj["id"])
     if not from_user:
         return Response("Username or Password is incorrect.", 403)
     to_user = resolve_service_username(service_obj["id"], to)
@@ -75,6 +77,7 @@ def get_vote_count() -> Response:
         "for": str (Username on Service)
         "from": str (Username on Service)
         "password": str (Password on ETN)
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
 
     Returns:
@@ -89,8 +92,8 @@ def get_vote_count() -> Response:
         "votes": int
     }
     """
-    service, key, _for, _from, password = get_params(
-        ["service_name", "service_key", "for", "from", "password"]
+    service, key, _for, _from, password, password_type = get_params(
+        ["service_name", "service_key", "for", "from", "password", "password_type"]
     )
 
     if _from == _for:
@@ -102,7 +105,7 @@ def get_vote_count() -> Response:
     user = resolve_service_username(service_obj["id"], _from)
     if not user:
         return Response("Username or Password is incorrect.", 403)
-    from_user = verify_credentials(user["username"], password)
+    from_user = verify_credentials(user["username"], password, password_type, service_obj["id"])
     if not from_user:
         return Response("Username or Password is incorrect.", 403)
     for_user = resolve_service_username(service_obj["id"], _for)
@@ -132,6 +135,7 @@ def get_score() -> Response:
         "for": str (Username on Service)
         "from": str (Username on Service)
         "password": str (Password on ETN)
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
 
     Returns:
@@ -146,8 +150,8 @@ def get_score() -> Response:
         "score": float
     }
     """
-    service, key, _for, _from, password = get_params(
-        ["service_name", "service_key", "for", "from", "password"]
+    service, key, _for, _from, password, password_type = get_params(
+        ["service_name", "service_key", "for", "from", "password", "password_type"]
     )
     if _for == _from:
         return Response("User cannot view themselves.", 400)
@@ -158,7 +162,7 @@ def get_score() -> Response:
     user = resolve_service_username(service_obj["id"], _from)
     if not user:
         return Response("Username or Password is incorrect.", 403)
-    from_user = verify_credentials(user["username"], password)
+    from_user = verify_credentials(user["username"], password, password_type, service_obj["id"])
     if not from_user:
         return Response("Username or Password is incorrect.", 403)
     for_user = resolve_service_username(service_obj["id"], _for)
