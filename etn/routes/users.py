@@ -154,6 +154,11 @@ def change_security():
     """
     username, password, password_type, security = get_params(["username", "password", "password_type", "security"])
 
+    try:
+        security = int(security)
+    except ValueError:
+        return Response("Invalid security option.", 400)
+
     user = verify_credentials(username, password, password_type)
     if not user:
         return Response("Username or Password is incorrect.", 403)
