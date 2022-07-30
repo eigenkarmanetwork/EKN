@@ -3,6 +3,7 @@ import etn.routes.registration as registration
 import etn.routes.users as users
 import etn.routes.voting as voting
 
+change_security = users.change_security
 gdpr_view = users.gdpr_view
 get_score = voting.get_score
 get_session_key = users.get_session_key
