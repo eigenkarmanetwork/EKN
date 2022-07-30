@@ -133,3 +133,34 @@ def gdpr_view():
             rows.append(row)
 
     return Response(json.dumps(rows))
+
+
+@allow_cors
+def change_security():
+    """
+    Used to change a user's security settings.
+
+    Message Structure:
+    {
+        "username": str
+        "password": str
+        "security": Literal[0, 1, 2]
+        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
+    }
+    Returns:
+    400: Invalid security option.
+    403: Username or Password is incorrect.
+    200: Success.
+    """
+    username, password, password_type, security = get_params(["username", "password", "password_type", "security"])
+
+    user = verify_credentials(username, password, password_type)
+    if not user:
+        return Response("Username or Password is incorrect.", 403)
+
+    if security not in [0, 1, 2]:
+        return Response("Invalid security option.", 400)
+
+    with DatabaseManager() as db:
+        db.execute("UPDATE users SET security=:security WHERE id=:id", {"security": security, "id": user["id"]})
+    return Response("Success.", 200)
