@@ -1,34 +1,162 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
-from etn.helpers import get_params, verify_credentials, verify_credentials_hash
+from etn.helpers import (
+    get_params,
+    verify_credentials,
+    verify_credentials_hash,
+    verify_service,
+    resolve_service_username,
+)
 from flask import Response, request
+from typing import Optional
 import json
 import secrets
 import time
 
 
 @allow_cors
-def verify_credentials_route():
+def verify_credentials_route() -> Response:
     """
-    Used to verify ETN user credentials for website login, or other purposes.
+    Used to verify ETN user credentials, and return either a connection key, session key, or password hash.
 
     Message Structure:
     {
         "username": str
         "password": str
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
+        "service_name": Optional[str]
+        "service_key": Optional[str]
     }
     Returns:
+    403: Service name or key is incorrect.
     403: Username or Password is incorrect.
-    200: Password Hash (SHA512)
+    404: Service is not connected.
+    200: JSON:
+    {
+        "password": str
+        "password_type": Literal["password_hash", "conneciton_key", "session_key"]
+        "expires": int (unix timestamp or 0 if N/A)
+    }
     """
-    username, password, password_type = get_params(["username", "password", "password_type"])
+    username, password, password_type, service_name, service_key = get_params(
+        ["username", "password", "password_type", "service_name", "service_key"]
+    )
 
-    user = verify_credentials(username, password, password_type)
+    service_id: Optional[int] = None
+    if service_name and service_key:
+        service = verify_service(service_name, service_key)
+        if service:
+            service_id = service["id"]
+        else:
+            return Response("Service name or key is incorrect.", 403)
+
+    user = verify_credentials(username, password, password_type, service_id)
     if not user:
         return Response("Username or Password is incorrect.", 403)
 
-    resp = Response(user["password"], 200)
+    session_key: Optional[str] = None
+    connection_key: Optional[str] = None
+    expires = 0
+    if user["security"] == 0 and service_id:
+        with DatabaseManager() as db:
+            result = db.execute(
+                "SELECT * FROM connections WHERE user=:user_id AND service=:service_id",
+                {"user_id": user["id"], "service_id": service_id},
+            )
+            row = result.fetchone()
+            if not row:
+                return Response("Service is not connected.", 404)
+            if row["key"]:
+                connection_key = row["key"]
+            else:
+                # Security was set to 0 after the connection was made, generating key.
+                connection_key = secrets.token_hex(16)
+                db.execute(
+                    "UPDATE connections SET key=:connection_key WHERE user=:user_id AND service=:service_id",
+                    {"connection_key": connection_key, "user_id": user["id"], "service_id": service_id},
+                )
+    if user["security"] <= 1:
+        with DatabaseManager() as db:
+            result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+            row = result.fetchone()
+            gen_key = True
+            if row:
+                if row["expires"] > int(time.time()):
+                    gen_key = False
+                    session_key = row["key"]
+                    expires = row["expires"]
+            if gen_key:
+                session_key = secrets.token_hex(16)
+                expires = int(time.time()) + 86_400
+                db.execute(
+                    "INSERT INTO session_keys (user, key, expires) VALUES (?, ?, ?)",
+                    (user["id"], session_key, expires),
+                )
+
+    resp = {
+        "password": connection_key if connection_key else session_key if session_key else user["password"],
+        "password_type": "connection_key"
+        if connection_key
+        else "session_key"
+        if session_key
+        else "password_hash",
+        "expires": expires if expires else 0,
+    }
+    return Response(json.dumps(resp), 200)
+
+
+@allow_cors
+def get_current_key() -> Response:
+    """
+    Get's the current session or connection key if it exists, otherwise returns 404.
+
+    Message Structure:
+    {
+        "username": str
+        "service_name": str
+        "service_key": str
+    }
+    Returns:
+    403: Service name or key is incorrect.
+    404: Service is not connected.
+    200: JSON:
+    {
+        "password": str
+        "password_type": Literal["password_hash", "conneciton_key", "session_key"]
+        "expires": int (unix timestamp or 0 if N/A)
+    }
+    """
+
+    username, service_name, service_key = get_params(["username", "service_name", "service_key"])
+
+    service = verify_service(service_name, service_key)
+    if not service:
+        return Response("Service name or key is incorrect.", 403)
+    service_id = service["id"]
+
+    user = resolve_service_username(service["id"], username)
+    if not user:
+        return Response("Service is not connected.", 404)
+
+    session_key: Optional[str] = None
+    connection_key: Optional[str] = None
+    expires = 0
+    if user["security"] == 0:
+        with DatabaseManager() as db:
+            result = db.execute(
+                "SELECT * FROM connections WHERE user=:user_id AND service=:service_id",
+                {"user_id": user["id"], "service_id": service_id},
+            )
+            row = result.fetchone()
+            if row["key"]:
+                connection_key = row["key"]
+            else:
+                # Security was set to 0 after the connection was made, generating key.
+                connection_key = secrets.token_hex(16)
+                db.execute(
+                    "UPDATE connections SET key=:connection_key WHERE user=:user_id AND service=:service_id",
+                    {"connection_key": connection_key, "user_id": user["id"], "service_id": service_id},
+                )
     if user["security"] == 1:
         with DatabaseManager() as db:
             result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
@@ -47,25 +175,20 @@ def verify_credentials_route():
                     (user["id"], session_key, expires),
                 )
 
-        resp.set_cookie("session_key", session_key, expires=expires)
-
-    return resp
-
-
-@allow_cors
-def get_session_key():
-    """
-    Get's the current session key from cookies if it exists, otherwise returns 404.
-    """
-
-    key = request.cookies.get("session_key")
-    if key is None:
-        return Response("", 404)
-    return Response(key)
+    resp = {
+        "password": connection_key if connection_key else session_key if session_key else user["password"],
+        "password_type": "connection_key"
+        if connection_key
+        else "session_key"
+        if session_key
+        else "password_hash",
+        "expires": expires if expires else 0,
+    }
+    return Response(json.dumps(resp), 200)
 
 
 @allow_cors
-def verify_credentials_hash_route():
+def verify_credentials_hash_route() -> Response:
     """
     DEPRECATED
     Use verify_credentials instead.
@@ -91,7 +214,7 @@ def verify_credentials_hash_route():
 
 
 @allow_cors
-def gdpr_view():
+def gdpr_view() -> Response:
     """
     Used to pull all data we have on a user in compliance with GDPR.
 
@@ -136,7 +259,7 @@ def gdpr_view():
 
 
 @allow_cors
-def change_security():
+def change_security() -> Response:
     """
     Used to change a user's security settings.
 
@@ -152,7 +275,9 @@ def change_security():
     403: Username or Password is incorrect.
     200: Success.
     """
-    username, password, password_type, security = get_params(["username", "password", "password_type", "security"])
+    username, password, password_type, security = get_params(
+        ["username", "password", "password_type", "security"]
+    )
 
     try:
         security = int(security)
@@ -167,5 +292,7 @@ def change_security():
         return Response("Invalid security option.", 400)
 
     with DatabaseManager() as db:
-        db.execute("UPDATE users SET security=:security WHERE id=:id", {"security": security, "id": user["id"]})
+        db.execute(
+            "UPDATE users SET security=:security WHERE id=:id", {"security": security, "id": user["id"]}
+        )
     return Response("Success.", 200)
