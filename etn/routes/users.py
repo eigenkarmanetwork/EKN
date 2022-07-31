@@ -102,7 +102,7 @@ def verify_credentials_route() -> Response:
         else "password_hash",
         "expires": expires if expires else 0,
     }
-    return Response(resp, 200)
+    return Response(json.dumps(resp), 200)
 
 
 @allow_cors
@@ -184,7 +184,7 @@ def get_current_key() -> Response:
         else "password_hash",
         "expires": expires if expires else 0,
     }
-    return Response(resp, 200)
+    return Response(json.dumps(resp), 200)
 
 
 @allow_cors
