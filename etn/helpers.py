@@ -181,7 +181,7 @@ def verify_session_key(username: str, key: str) -> Optional[sqlite3.Row]:
         user = result.fetchone()
         if not user:
             return None
-        if user["security"] < 1:
+        if user["security"] == 2:
             return None
         result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
         row = result.fetchone()
