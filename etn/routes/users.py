@@ -81,10 +81,17 @@ def verify_credentials_route() -> Response:
             row = result.fetchone()
             gen_key = True
             if row:
+                gen_key = False
                 if row["expires"] > int(time.time()):
-                    gen_key = False
                     session_key = row["key"]
                     expires = row["expires"]
+                else:
+                    session_key = secrets.token_hex(16)
+                    expires = int(time.time()) + 86_400
+                    db.execute(
+                        "UPDATE session_keys SET key=:key, expires=:expires WHERE user=:id",
+                        {"id": user["id"], "key": session_key, "expires": expires},
+                    )
             if gen_key:
                 session_key = secrets.token_hex(16)
                 expires = int(time.time()) + 86_400
