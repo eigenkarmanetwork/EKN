@@ -172,3 +172,18 @@ def get_score() -> Response:
     score = get_votes(for_user["id"], from_user["id"])
     response = {"for": _for, "from": _from, "score": score}
     return Response(json.dumps(response), 200)
+
+@allow_cors(hosts=["*"])
+def categories() -> Response:
+    """
+    GET /categories
+
+    Returns:
+    200: JSON list of all categories
+    """
+    cats = []
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM categories")
+        for row in result.fetchall():
+            cats.append(row["category"])
+    return Response(json.dumps(cats), 200)

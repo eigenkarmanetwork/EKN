@@ -177,13 +177,13 @@ def get_current_key() -> Response:
     if connection_key:
         resp = {
             "password": connection_key,
-            "password_type": "connection_key"
+            "password_type": "connection_key",
             "expires": 0,
         }
-    elif session_key
+    elif session_key:
         resp = {
             "password": session_key,
-            "password_type": "session_key"
+            "password_type": "session_key",
             "expires": expires,
         }
     else:
