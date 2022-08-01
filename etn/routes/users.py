@@ -126,6 +126,7 @@ def get_current_key() -> Response:
     Returns:
     403: Service name or key is incorrect.
     404: Service is not connected.
+    404: No key available.
     200: JSON:
     {
         "password": str
@@ -168,29 +169,25 @@ def get_current_key() -> Response:
         with DatabaseManager() as db:
             result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
             row = result.fetchone()
-            gen_key = True
             if row:
                 if row["expires"] > int(time.time()):
-                    gen_key = False
                     session_key = row["key"]
                     expires = row["expires"]
-            if gen_key:
-                session_key = secrets.token_hex(16)
-                expires = int(time.time()) + 86_400
-                db.execute(
-                    "INSERT INTO session_keys (user, key, expires) VALUES (?, ?, ?)",
-                    (user["id"], session_key, expires),
-                )
 
-    resp = {
-        "password": connection_key if connection_key else session_key if session_key else user["password"],
-        "password_type": "connection_key"
-        if connection_key
-        else "session_key"
-        if session_key
-        else "password_hash",
-        "expires": expires if expires else 0,
-    }
+    if connection_key:
+        resp = {
+            "password": connection_key,
+            "password_type": "connection_key"
+            "expires": 0,
+        }
+    elif session_key
+        resp = {
+            "password": session_key,
+            "password_type": "session_key"
+            "expires": expires,
+        }
+    else:
+        return Response('No key available.', 404)
     return Response(json.dumps(resp), 200)
 
 
