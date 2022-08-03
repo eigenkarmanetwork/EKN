@@ -25,7 +25,7 @@ app.add_url_rule("/categories", view_func=categories, methods=["GET", "OPTIONS"]
 app.add_url_rule("/change_security", view_func=change_security, methods=["POST", "OPTIONS"])
 app.add_url_rule("/gdpr_view", view_func=gdpr_view, methods=["POST", "OPTIONS"])
 app.add_url_rule("/get_score", view_func=get_score, methods=["POST", "OPTIONS"])
-app.add_url_rule("/get_current_key", view_func=get_current_key, methods=["GET", "OPTIONS"])
+app.add_url_rule("/get_current_key", view_func=get_current_key, methods=["POST", "OPTIONS"])
 app.add_url_rule("/get_vote_count", view_func=get_vote_count, methods=["POST", "OPTIONS"])
 app.add_url_rule("/register_connection", view_func=register_connection, methods=["POST", "OPTIONS"])
 app.add_url_rule("/register_service", view_func=register_service, methods=["POST", "OPTIONS"])
