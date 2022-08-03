@@ -16,18 +16,21 @@ def vote() -> Response:
         "from": str (Username on Service)
         "password": str (Password on ETN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
+        "amount": Optional[int]
     }
 
     Returns:
     400: User cannot vote for themselves.
+    400: Cannot have a negative amount of trust.
     403: Username or Password is incorrect.
     403: Service name or key is incorrect.
     404: 'to' is not connected to this service.
     200: Success.
     """
-    service, key, to, _from, password, password_type = get_params(
-        ["service_name", "service_key", "to", "from", "password", "password_type"]
+    service, key, to, _from, password, password_type, amount = get_params(
+        ["service_name", "service_key", "to", "from", "password", "password_type", "amount"]
     )
+    amount = int(amount) if amount else 1
 
     if _from == to:
         return Response("User cannot vote for themselves.", 400)
@@ -52,17 +55,21 @@ def vote() -> Response:
         )
         current = result.fetchone()
         if current:
+            if (current["count"] + amount) < 0:
+                return Response("Cannot have a negative amount of trust.", 400)
             db.execute(
                 "UPDATE votes SET count=:count WHERE user_from=:from AND user_to=:to",
-                {"from": from_user["id"], "to": to_user["id"], "count": current["count"] + 1},
+                {"from": from_user["id"], "to": to_user["id"], "count": current["count"] + amount},
             )
         else:
+            if amount < 0:
+                return Response("Cannot have a negative amount of trust.", 400)
             db.execute(
-                "INSERT INTO votes (user_from, user_to, count) VALUES (?, ?, 1)",
-                (from_user["id"], to_user["id"]),
+                "INSERT INTO votes (user_from, user_to, count) VALUES (?, ?, ?)",
+                (from_user["id"], to_user["id"], amount),
             )
 
-    return Response("Success", 200)
+    return Response("Success.", 200)
 
 
 @allow_cors(hosts=["*"])
