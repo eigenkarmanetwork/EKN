@@ -130,7 +130,7 @@ def get_current_key() -> Response:
     200: JSON:
     {
         "password": str
-        "password_type": Literal["password_hash", "conneciton_key", "session_key"]
+        "password_type": Literal["conneciton_key", "session_key"]
         "expires": int (unix timestamp or 0 if N/A)
     }
     """
