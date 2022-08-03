@@ -38,10 +38,7 @@ def vote() -> Response:
     service_obj = verify_service(service, key)
     if not service_obj:
         return Response("Service name or key is incorrect.", 403)
-    user = resolve_service_username(service_obj["id"], _from)
-    if not user:
-        return Response("Username or Password is incorrect.", 403)
-    from_user = verify_credentials(user["username"], password, password_type, service_obj["id"])
+    from_user = verify_credentials(username, password, password_type, service_obj["id"])
     if not from_user:
         return Response("Username or Password is incorrect.", 403)
     to_user = resolve_service_username(service_obj["id"], to)

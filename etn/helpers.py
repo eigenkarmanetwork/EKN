@@ -116,6 +116,11 @@ def verify_credentials(
     Verifies an ETN username and password/key.
     """
 
+    if service_id and password_type != "connection_key":
+        user = resolve_service_username(service_id, username)
+        if not user:
+            return None
+        username = user["username"]
     if password_type is None or password_type == "raw_password":
         return verify_credentials_raw(username, password)
     elif password_type == "password_hash":
@@ -125,11 +130,6 @@ def verify_credentials(
             return None
         return verify_service_username(service_id, username, password)
     elif password_type == "session_key":
-        if service_id:
-            user = resolve_service_username(service_id, username)
-            if not user:
-                return None
-            username = user["username"]
         return verify_session_key(username, password)
     else:
         return None
