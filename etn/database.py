@@ -61,7 +61,7 @@ class DatabaseManager:
             username TEXT,
             password TEXT,
             salt TEXT,
-            security TEXT CHECK(security in (0, 1, 2)) DEFAULT 2
+            security INTEGER CHECK(security in (0, 1, 2)) DEFAULT 0
         )"""
         )
         cur.execute(
@@ -76,7 +76,7 @@ class DatabaseManager:
             "CREATE TABLE IF NOT EXISTS session_keys (user INTEGER PRIMARY KEY, key TEXT, expires INTEGER)"
         )
         conn.commit()
-        cur.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '2.1.0')")
+        cur.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '2.1.1')")
         cur.execute("INSERT INTO categories (category) VALUES ('general')")
         cur.execute(
             "INSERT INTO services (name, key, salt) VALUES (?, ?, ?)",
