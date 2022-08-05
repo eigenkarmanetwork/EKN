@@ -6,9 +6,9 @@ from etn.helpers import (
     verify_credentials_hash,
     verify_service,
     resolve_service_username,
-    update_session_key
+    update_session_key,
 )
-from flask import Response, request
+from flask import Response
 from typing import Optional
 import json
 import secrets
@@ -188,7 +188,7 @@ def get_current_key() -> Response:
             "expires": expires,
         }
     else:
-        return Response('No key available.', 404)
+        return Response("No key available.", 404)
     return Response(json.dumps(resp), 200)
 
 

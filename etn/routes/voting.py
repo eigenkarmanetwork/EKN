@@ -181,6 +181,7 @@ def get_score() -> Response:
     response = {"for": _for, "from": _from, "score": score}
     return Response(json.dumps(response), 200)
 
+
 @allow_cors(hosts=["*"])
 def categories() -> Response:
     """

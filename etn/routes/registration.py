@@ -118,7 +118,7 @@ def register_connection() -> Response:
         if not row:
             db.execute(
                 "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
-                (service_id, service_user, user["id"])
+                (service_id, service_user, user["id"]),
             )
     session_key: Optional[str] = None
     connection_key: Optional[str] = None
