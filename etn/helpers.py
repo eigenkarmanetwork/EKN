@@ -255,3 +255,37 @@ def verify_service_username(service_id: int, service_user: str, key: str) -> Opt
         if user["security"] != 0:
             return None
         return user
+
+
+def update_session_key(username: str) -> None:
+    """
+    Updates a user's session key if neccessary.
+    """
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        user = result.fetchone()
+        assert user is not None
+        if user["security"] == 2:
+            return
+        result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+        row = result.fetchone()
+        gen_key = True
+        if row:
+            gen_key = False
+            if row["expires"] > int(time.time()):
+                session_key = row["key"]
+                expires = row["expires"]
+            else:
+                session_key = secrets.token_hex(16)
+                expires = int(time.time()) + 86_400
+                db.execute(
+                    "UPDATE session_keys SET key=:key, expires=:expires WHERE user=:id",
+                    {"id": user["id"], "key": session_key, "expires": expires},
+                )
+        if gen_key:
+            session_key = secrets.token_hex(16)
+            expires = int(time.time()) + 86_400
+            db.execute(
+                "INSERT INTO session_keys (user, key, expires) VALUES (?, ?, ?)",
+                (user["id"], session_key, expires),
+            )

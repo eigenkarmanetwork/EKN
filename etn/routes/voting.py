@@ -1,6 +1,13 @@
 from etn.database import DatabaseManager
 from etn.decs import allow_cors
-from etn.helpers import get_params, get_votes, resolve_service_username, verify_credentials, verify_service
+from etn.helpers import (
+    get_params,
+    get_votes,
+    resolve_service_username,
+    verify_credentials,
+    verify_service,
+    update_session_key,
+)
 from flask import Response
 import json
 
@@ -41,6 +48,7 @@ def vote() -> Response:
     from_user = verify_credentials(_from, password, password_type, service_obj["id"])
     if not from_user:
         return Response("Username or Password is incorrect.", 403)
+    update_session_key(from_user["username"])
     to_user = resolve_service_username(service_obj["id"], to)
     if not to_user:
         return Response("'to' is not connected to this service.", 404)
@@ -106,12 +114,10 @@ def get_vote_count() -> Response:
     service_obj = verify_service(service, key)
     if not service_obj:
         return Response("Service name or key is incorrect.", 403)
-    user = resolve_service_username(service_obj["id"], _from)
-    if not user:
-        return Response("Username or Password is incorrect.", 403)
-    from_user = verify_credentials(user["username"], password, password_type, service_obj["id"])
+    from_user = verify_credentials(_from, password, password_type, service_obj["id"])
     if not from_user:
         return Response("Username or Password is incorrect.", 403)
+    update_session_key(from_user["username"])
     for_user = resolve_service_username(service_obj["id"], _for)
     if not for_user:
         return Response("'for' is not connected to this service.", 404)
@@ -163,12 +169,10 @@ def get_score() -> Response:
     service_obj = verify_service(service, key)
     if not service_obj:
         return Response("Service name or key is incorrect.", 403)
-    user = resolve_service_username(service_obj["id"], _from)
-    if not user:
-        return Response("Username or Password is incorrect.", 403)
-    from_user = verify_credentials(user["username"], password, password_type, service_obj["id"])
+    from_user = verify_credentials(_from, password, password_type, service_obj["id"])
     if not from_user:
         return Response("Username or Password is incorrect.", 403)
+    update_session_key(from_user["username"])
     for_user = resolve_service_username(service_obj["id"], _for)
     if not for_user:
         return Response("'for' is not connected to this service.", 404)

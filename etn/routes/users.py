@@ -6,6 +6,7 @@ from etn.helpers import (
     verify_credentials_hash,
     verify_service,
     resolve_service_username,
+    update_session_key
 )
 from flask import Response, request
 from typing import Optional
@@ -237,6 +238,7 @@ def gdpr_view() -> Response:
     user = verify_credentials(username, password, password_type)
     if not user:
         return Response("Username or Password is incorrect.", 403)
+    update_session_key(username)
 
     rows = []
     with DatabaseManager() as db:
@@ -299,4 +301,5 @@ def change_security() -> Response:
         db.execute(
             "UPDATE users SET security=:security WHERE id=:id", {"security": security, "id": user["id"]}
         )
+    update_session_key(username)
     return Response("Success.", 200)
