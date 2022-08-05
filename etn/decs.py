@@ -11,9 +11,9 @@ def allow_cors(
         def cors_wrapper(*args, **kwargs) -> Response:
             try:
                 if hosts is not None:
-                    hosts = ["http://www.eigentrust.net", "http://eigentrust.net"]
+                    hosts = ["https://www.eigentrust.net", "https://eigentrust.net"]
             except Exception:
-                hosts = ["http://www.eigentrust.net", "http://eigentrust.net"]
+                hosts = ["https://www.eigentrust.net", "https://eigentrust.net"]
             if request.method == "OPTIONS" and not custom_options:
                 response = Response()
             else:
