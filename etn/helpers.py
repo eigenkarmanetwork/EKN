@@ -87,26 +87,26 @@ def get_votes(_for: int, _from: int) -> float:
     for i in range(1, users_count):
         votes_matrix[i, i] = -1
     votes_matrix[0, 0] = 1
-    print("User Index:")
-    print(users_index)
-    print("Votes Matrix:")
-    print(votes_matrix)
+    # print("User Index:")
+    # print(users_index)
+    # print("Votes Matrix:")
+    # print(votes_matrix)
 
     users_matrix = np.zeros(users_count)
     users_matrix[0] = 1  # Viewer has 1 Trust
-    print("Users Matrix:")
-    print(users_matrix)
+    # print("Users Matrix:")
+    # print(users_matrix)
 
     scores = list(np.linalg.solve(votes_matrix, users_matrix))
-    print("Scores:")
-    print(scores)
-    print("Total Votes:")
-    print(total_votes - for_user_votes)
-    print("Score: ")
+    # print("Scores:")
+    # print(scores)
+    # print("Total Votes:")
+    # print(total_votes - for_user_votes)
+    # print("Score: ")
     score = round(scores[for_index] * (total_votes - for_user_votes), 2)
     if score == -0.0:
         score = 0.0
-    print(score)
+    # print(score)
     return score
 
 
