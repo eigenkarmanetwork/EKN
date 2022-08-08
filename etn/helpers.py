@@ -33,6 +33,11 @@ def get_params(params: list[str]) -> Any:
 
 
 def get_network(user: int) -> list[int]:
+    """
+    Function currently runs at O(n^3) time.
+    
+    Function itself is O(n^2) but `x in list` runs at O(n).
+    """
     users: list[int] = [user]
     to_process: list[int] = [user]
     with DatabaseManager() as db:
