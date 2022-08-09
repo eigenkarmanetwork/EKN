@@ -35,7 +35,7 @@ def get_params(params: list[str]) -> Any:
 def get_network(user: int) -> list[int]:
     """
     Function currently runs at O(n^3) time.
-    
+
     Function itself is O(n^2) but `x in list` runs at O(n).
     """
     users: list[int] = [user]
@@ -52,6 +52,9 @@ def get_network(user: int) -> list[int]:
 
 
 def get_users_index(users: list[int], from_user: int) -> dict[int, int]:
+    """
+    Function currently runs at O(n^2) time.
+    """
     users = users.copy()
     users.pop(users.index(from_user))
     ids = sorted(list(users))
