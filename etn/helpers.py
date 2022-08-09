@@ -65,6 +65,9 @@ def get_users_index(users: list[int], from_user: int) -> dict[int, int]:
 
 
 def get_votes(_for: int, _from: int) -> float:
+    """
+    np.lingalg.solve calls LAPACK gesv which runs at O(n^3) time.
+    """
     users_in_network = get_network(_from)
     if _for not in users_in_network:
         return 0.0
