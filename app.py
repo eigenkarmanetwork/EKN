@@ -9,6 +9,7 @@ from etn.routes import (
     register_connection,
     register_service,
     register_user,
+    registration,
     verify_credentials_hash_route,
     verify_credentials_route,
     version,
@@ -29,6 +30,9 @@ app.add_url_rule("/get_current_key", view_func=get_current_key, methods=["POST",
 app.add_url_rule("/get_vote_count", view_func=get_vote_count, methods=["POST", "OPTIONS"])
 app.add_url_rule("/register_connection", view_func=register_connection, methods=["POST", "OPTIONS"])
 app.add_url_rule("/register_service", view_func=register_service, methods=["POST", "OPTIONS"])
+app.add_url_rule(
+    "/register_temp_user", view_func=registration.register_temp_user, methods=["POST", "OPTIONS"]
+)
 app.add_url_rule("/register_user", view_func=register_user, methods=["POST", "OPTIONS"])
 app.add_url_rule(
     "/verify_credentials_hash", view_func=verify_credentials_hash_route, methods=["POST", "OPTIONS"]

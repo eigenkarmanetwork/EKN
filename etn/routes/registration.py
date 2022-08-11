@@ -20,9 +20,13 @@ def register_user() -> Response:
 
     Returns:
     409: Username is not available.
-    200: Success.
+    409: Invalid Username.
+    200: Registration Successful.
     """
     username, password = get_params(["username", "password"])
+    if ":" in username:
+        # Colon not allowed to ensure unique usernames for temp users
+        return Response("Invalid Username", 409)
 
     salt = secrets.token_hex(6)
     sha512 = hashlib.new("sha512")
@@ -41,7 +45,45 @@ def register_user() -> Response:
             "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
             (db.etn_service_id, username, id),
         )
-    return Response("Registration Successful", 200)
+    return Response("Registration Successful.", 200)
+
+
+@allow_cors(hosts=["*"])
+def register_temp_user() -> Response:
+    """
+    Message Structure:
+    {
+        "service_user": str (Service Username)
+        "service_name": str
+        "service_key": str
+    }
+
+    Returns:
+    403: Service name or key is incorrect.
+    409: Username is not available.
+    200: Registration Successful.
+    """
+    service_user, service, key = get_params(["service_user", "service_name", "service_key"])
+    username = f"{service}:{service_user}"  # Helps keep username unique
+    service_obj = verify_service(service, key)
+    if not service_obj:
+        return Response("Service name or key is incorrect.", 403)
+    service_id = service_obj["id"]
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        if result.fetchone():
+            return Response("Username is not available.", 409)
+        db.execute(
+            "INSERT INTO users (username, password, salt, temp) VALUES (?, ?, ?)", (username, None, None, 1)
+        )
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        id = result.fetchone()["id"]
+        db.execute(
+            "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
+            (service_id, service_user, id),
+        )
+    return Response("Registration Successful.", 200)
 
 
 @allow_cors
