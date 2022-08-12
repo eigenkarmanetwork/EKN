@@ -75,7 +75,7 @@ def register_temp_user() -> Response:
         if result.fetchone():
             return Response("Username is not available.", 409)
         db.execute(
-            "INSERT INTO users (username, password, salt, temp) VALUES (?, ?, ?)", (username, None, None, 1)
+            "INSERT INTO users (username, password, salt, temp) VALUES (?, ?, ?, ?)", (username, None, None, 1)
         )
         result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
         id = result.fetchone()["id"]
@@ -131,6 +131,7 @@ def register_connection() -> Response:
     Returns:
     403: Service name or key is incorrect.
     403: Username or Password is incorrect.
+    409: Service user already connected to the ETN.
     200: JSON:
     {
         "password": str
@@ -153,11 +154,38 @@ def register_connection() -> Response:
 
     with DatabaseManager() as db:
         result = db.execute(
-            "SELECT * FROM connections WHERE user=:user_id AND service=:service_id",
-            {"user_id": user["id"], "service_id": service_id},
+            "SELECT * FROM connections WHERE service_user=:service_user AND service=:service_id",
+            {"service_user": service_user, "service_id": service_id},
         )
         row = result.fetchone()
         if not row:
+            db.execute(
+                "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
+                (service_id, service_user, user["id"]),
+            )
+        else:
+            # Possibly a temp account!
+            temp_user_id = int(row['user'])
+            result = db.execute("SELECT * FROM users WHERE id=:id", {"id": temp_user_id})
+            temp_user = result.fetchone()
+            if not temp_user:
+                raise RuntimeError("Service user is connected to a non existant account")
+            if int(temp_user["temp"]) == 0:
+                return Response("Service user already connected to the ETN.", 409)
+            # Temp account found! Migrating...
+            db.execute(
+                "UPDATE votes SET user_from=:new_id WHERE user_from=:temp_id",
+                {"new_id": user["id"], "temp_id": temp_user_id}
+            )
+            db.execute(
+                "UPDATE votes SET user_to=:new_id WHERE user_to=:temp_id",
+                {"new_id": user["id"], "temp_id": temp_user_id}
+            )
+            db.execute("DELETE FROM users WHERE id=:id and temp=1", {"id": temp_user_id})
+            db.execute(
+                "DELETE FROM connections WHERE user=:id and service=:service_id",
+                {"id": temp_user_id, "service_id": service_id}
+            )
             db.execute(
                 "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
                 (service_id, service_user, user["id"]),
