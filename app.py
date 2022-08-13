@@ -6,6 +6,7 @@ from etn.routes import (
     get_score,
     get_current_key,
     get_vote_count,
+    misc,
     register_connection,
     register_service,
     register_user,
@@ -28,6 +29,10 @@ app.add_url_rule("/gdpr_view", view_func=gdpr_view, methods=["POST", "OPTIONS"])
 app.add_url_rule("/get_score", view_func=get_score, methods=["POST", "OPTIONS"])
 app.add_url_rule("/get_current_key", view_func=get_current_key, methods=["POST", "OPTIONS"])
 app.add_url_rule("/get_vote_count", view_func=get_vote_count, methods=["POST", "OPTIONS"])
+app.add_url_rule("/get_total_users", view_func=misc.get_total_users, methods=["GET", "OPTIONS"])
+app.add_url_rule("/get_total_real_users", view_func=misc.get_total_real_users, methods=["GET", "OPTIONS"])
+app.add_url_rule("/get_total_temp_users", view_func=misc.get_total_temp_users, methods=["GET", "OPTIONS"])
+app.add_url_rule("/get_total_votes", view_func=misc.get_total_votes, methods=["GET", "OPTIONS"])
 app.add_url_rule("/register_connection", view_func=register_connection, methods=["POST", "OPTIONS"])
 app.add_url_rule("/register_service", view_func=register_service, methods=["POST", "OPTIONS"])
 app.add_url_rule(
