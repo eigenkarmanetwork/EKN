@@ -20,9 +20,13 @@ def register_user() -> Response:
 
     Returns:
     409: Username is not available.
-    200: Success.
+    409: Invalid Username.
+    200: Registration Successful.
     """
     username, password = get_params(["username", "password"])
+    if ":" in username:
+        # Colon not allowed to ensure unique usernames for temp users
+        return Response("Invalid Username", 409)
 
     salt = secrets.token_hex(6)
     sha512 = hashlib.new("sha512")
@@ -41,7 +45,46 @@ def register_user() -> Response:
             "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
             (db.etn_service_id, username, id),
         )
-    return Response("Registration Successful", 200)
+    return Response("Registration Successful.", 200)
+
+
+@allow_cors(hosts=["*"])
+def register_temp_user() -> Response:
+    """
+    Message Structure:
+    {
+        "service_user": str (Service Username)
+        "service_name": str
+        "service_key": str
+    }
+
+    Returns:
+    403: Service name or key is incorrect.
+    409: Username is not available.
+    200: Registration Successful.
+    """
+    service_user, service, key = get_params(["service_user", "service_name", "service_key"])
+    username = f"{service}:{service_user}"  # Helps keep username unique
+    service_obj = verify_service(service, key)
+    if not service_obj:
+        return Response("Service name or key is incorrect.", 403)
+    service_id = service_obj["id"]
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        if result.fetchone():
+            return Response("Username is not available.", 409)
+        db.execute(
+            "INSERT INTO users (username, password, salt, temp) VALUES (?, ?, ?, ?)",
+            (username, None, None, 1),
+        )
+        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        id = result.fetchone()["id"]
+        db.execute(
+            "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
+            (service_id, service_user, id),
+        )
+    return Response("Registration Successful.", 200)
 
 
 @allow_cors
@@ -89,6 +132,7 @@ def register_connection() -> Response:
     Returns:
     403: Service name or key is incorrect.
     403: Username or Password is incorrect.
+    409: Service user already connected to the ETN.
     200: JSON:
     {
         "password": str
@@ -111,11 +155,38 @@ def register_connection() -> Response:
 
     with DatabaseManager() as db:
         result = db.execute(
-            "SELECT * FROM connections WHERE user=:user_id AND service=:service_id",
-            {"user_id": user["id"], "service_id": service_id},
+            "SELECT * FROM connections WHERE service_user=:service_user AND service=:service_id",
+            {"service_user": service_user, "service_id": service_id},
         )
         row = result.fetchone()
         if not row:
+            db.execute(
+                "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
+                (service_id, service_user, user["id"]),
+            )
+        else:
+            # Possibly a temp account!
+            temp_user_id = int(row["user"])
+            result = db.execute("SELECT * FROM users WHERE id=:id", {"id": temp_user_id})
+            temp_user = result.fetchone()
+            if not temp_user:
+                raise RuntimeError("Service user is connected to a non existant account")
+            if int(temp_user["temp"]) == 0:
+                return Response("Service user already connected to the ETN.", 409)
+            # Temp account found! Migrating...
+            db.execute(
+                "UPDATE votes SET user_from=:new_id WHERE user_from=:temp_id",
+                {"new_id": user["id"], "temp_id": temp_user_id},
+            )
+            db.execute(
+                "UPDATE votes SET user_to=:new_id WHERE user_to=:temp_id",
+                {"new_id": user["id"], "temp_id": temp_user_id},
+            )
+            db.execute("DELETE FROM users WHERE id=:id and temp=1", {"id": temp_user_id})
+            db.execute(
+                "DELETE FROM connections WHERE user=:id and service=:service_id",
+                {"id": temp_user_id, "service_id": service_id},
+            )
             db.execute(
                 "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
                 (service_id, service_user, user["id"]),
