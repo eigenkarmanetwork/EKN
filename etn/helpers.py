@@ -32,31 +32,39 @@ def get_params(params: list[str]) -> Any:
     return ret
 
 
-def get_network(user: int) -> list[int]:
-    users: list[int] = [user]
-    to_process: list[int] = [user]
+def get_network(user: int) -> set[int]:
+    """
+    Function runs at O(n^2) time.
+    """
+    users: set[int] = {user}
+    to_process: set[int] = {user}
     with DatabaseManager() as db:
         while len(to_process) > 0 and len(users) < NETWORK_SIZE_LIMIT:
             u = to_process.pop()
             result = db.execute("SELECT * FROM votes WHERE user_from=:user", {"user": u})
             for uu in result.fetchall():
                 if uu["user_to"] not in users:
-                    users.append(uu["user_to"])
-                    to_process.append(uu["user_to"])
+                    users.add(uu["user_to"])
+                    to_process.add(uu["user_to"])
     return users
 
 
-def get_users_index(users: list[int], from_user: int) -> dict[int, int]:
+def get_users_index(users: set[int], from_user: int) -> dict[int, int]:
+    """
+    Function runs at O(n^2) time.
+    """
     users = users.copy()
-    users.pop(users.index(from_user))
-    ids = sorted(list(users))
+    users.remove(from_user)
     indexs = {from_user: 0}
-    for id in ids:
-        indexs[id] = ids.index(id) + 1
+    for i, user in enumerate(users):
+        indexs[user] = i + 1
     return indexs
 
 
 def get_votes(_for: int, _from: int) -> float:
+    """
+    np.lingalg.solve calls LAPACK gesv which runs at O(n^3) time.
+    """
     users_in_network = get_network(_from)
     if _for not in users_in_network:
         return 0.0
