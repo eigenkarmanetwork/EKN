@@ -177,7 +177,7 @@ def get_score() -> Response:
     if not for_user:
         return Response("'for' is not connected to this service.", 404)
 
-    score = get_votes(for_user["id"], from_user["id"])
+    score = get_votes(for_user["id"], from_user["id"], "general")
     response = {"for": _for, "from": _from, "score": score}
     return Response(json.dumps(response), 200)
 
