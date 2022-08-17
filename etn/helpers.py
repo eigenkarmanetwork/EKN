@@ -3,6 +3,7 @@ from etn.types import PASSWORD_TYPE
 from flask import request
 from typing import Any, Optional
 import numpy as np
+import functools
 import hashlib
 import secrets
 import sqlite3
@@ -32,7 +33,8 @@ def get_params(params: list[str]) -> Any:
     return ret
 
 
-def get_network(user: int) -> set[int]:
+@functools.cache
+def get_network(user: int) -> frozenset[int]:
     """
     Function runs at O(n^2) time.
     """
@@ -46,14 +48,15 @@ def get_network(user: int) -> set[int]:
                 if uu["user_to"] not in users:
                     users.add(uu["user_to"])
                     to_process.add(uu["user_to"])
-    return users
+    return frozenset(users)
 
 
-def get_users_index(users: set[int], from_user: int) -> dict[int, int]:
+@functools.cache
+def get_users_index(usersset: frozenset[int], from_user: int) -> dict[int, int]:
     """
     Function runs at O(n^2) time.
     """
-    users = users.copy()
+    users = set(usersset.copy())
     users.remove(from_user)
     indexs = {from_user: 0}
     for i, user in enumerate(users):
@@ -61,6 +64,7 @@ def get_users_index(users: set[int], from_user: int) -> dict[int, int]:
     return indexs
 
 
+@functools.cache
 def get_votes(_for: int, _from: int) -> float:
     """
     np.lingalg.solve calls LAPACK gesv which runs at O(n^3) time.
