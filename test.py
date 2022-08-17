@@ -2,11 +2,16 @@ from etn.database import DatabaseManager
 from etn.helpers import get_votes, get_network, get_users_index
 import time
 
-"""
-WIP: Please ignore
 with DatabaseManager() as db:
-    print
-"""
+    result = db.execute("SELECT count(*) FROM users")
+    total_users = result.fetchone()["count(*)"]
+    result = db.execute("SELECT count(*) FROM votes")
+    vote_rows = result.fetchone()["count(*)"]
+    result = db.execute('SELECT sum("count") FROM votes')
+    total_votes = result.fetchone()['sum("count")']
+    print(f"{total_users=}")
+    print(f"{vote_rows=}")
+    print(f"{total_votes=}")
 
 all = []
 ts_all = []
@@ -62,3 +67,6 @@ finally:
     print(f"Average Time: {sum(all) / len(all)}")
     print(f"Average Cache Time: {sum(caching_all) / len(caching_all)}")
     print(f"Average Trust: {sum(ts_all) / len(ts_all)}")
+    print(f"{total_users=}")
+    print(f"{vote_rows=}")
+    print(f"{total_votes=}")
