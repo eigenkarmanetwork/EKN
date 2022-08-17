@@ -242,23 +242,19 @@ def gdpr_view() -> Response:
 
     rows = []
     with DatabaseManager() as db:
-        row = {}
-        for key in user.keys():
-            row[key] = user[key]
+        row = dict(user)
+        del row["password"]
+        del row["salt"]
         rows.append(row)
 
         result = db.execute("SELECT * FROM connections WHERE user=:id", {"id": user["id"]})
         for raw_row in result.fetchall():
-            row = {}
-            for key in raw_row.keys():
-                row[key] = raw_row[key]
+            row = dict(raw_row)
             rows.append(row)
 
         result = db.execute("SELECT * FROM votes WHERE user_from=:id", {"id": user["id"]})
         for raw_row in result.fetchall():
-            row = {}
-            for key in raw_row.keys():
-                row[key] = raw_row[key]
+            row = dict(raw_row)
             rows.append(row)
 
     return Response(json.dumps(rows))

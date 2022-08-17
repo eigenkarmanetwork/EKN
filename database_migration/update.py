@@ -6,6 +6,7 @@ from database_migration.versions import (
     v2_1_0,
     v2_1_1,
     v2_2_0,
+    v2_2_1,
     v2_3_0,
 )
 from etn import types
@@ -24,6 +25,7 @@ main_database_versions: types.DATABASE_VERSIONS = {
     "2.1.0": v2_1_0.update,
     "2.1.1": v2_1_1.update,
     "2.2.0": v2_2_0.update,
+    "2.2.1": v2_2_1.update,
     "2.3.0": v2_3_0.update,
 }
 
