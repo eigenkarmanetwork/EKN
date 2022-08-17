@@ -34,14 +34,14 @@ try:
             get_users_index(get_network(i), i)
             stop = time.monotonic()
             print(f"    {i} Caching Done {stop} ({stop - start})")
-            if stop - start > 2: # If not previously cached.
+            if stop - start > .2: # If not previously cached.
                 caching_all.append(stop - start)
             start = time.monotonic()
             print(f"    {ii} Caching... {start}")
             get_users_index(get_network(ii), ii)
             stop = time.monotonic()
             print(f"    {ii} Caching Done {stop} ({stop - start})")
-            if stop - start > 2: # If not previously cached.
+            if stop - start > .2: # If not previously cached.
                 caching_all.append(stop - start)
             print("Done caching.")
             start = time.monotonic()
