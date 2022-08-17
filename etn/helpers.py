@@ -4,6 +4,7 @@ from flask import request
 from typing import Any, Optional
 import numpy as np
 import hashlib
+import json
 import secrets
 import sqlite3
 import time
@@ -32,16 +33,29 @@ def get_params(params: list[str]) -> Any:
     return ret
 
 
-def get_network(user: int) -> set[int]:
+def get_where_str(flavors: Optional[list[str]]) -> str:
+    if not flavors:
+        where_str = "WHERE '1'='1'"
+    else:
+        where_str = "WHERE category in ("
+        for flavor in flavors:
+            where_str += f"'{flavor}', "
+        where_str = where_str.strip(", ")  # Strip tailing comma
+        where_str += ")"
+    return where_str
+
+
+def get_network(user: int, flavors: Optional[list[str]] = None) -> set[int]:
     """
     Function runs at O(n^2) time.
     """
+    where_str = get_where_str(flavors)
     users: set[int] = {user}
     to_process: set[int] = {user}
     with DatabaseManager() as db:
         while len(to_process) > 0 and len(users) < NETWORK_SIZE_LIMIT:
             u = to_process.pop()
-            result = db.execute("SELECT * FROM votes WHERE user_from=:user", {"user": u})
+            result = db.execute(f"SELECT * FROM votes {where_str} AND user_from=:user", {"user": u})
             for uu in result.fetchall():
                 if uu["user_to"] not in users:
                     users.add(uu["user_to"])
@@ -61,35 +75,72 @@ def get_users_index(users: set[int], from_user: int) -> dict[int, int]:
     return indexs
 
 
-def get_votes(_for: int, _from: int) -> float:
+def get_votes(_for: int, _from: int, flavor: str) -> float:
     """
     np.lingalg.solve calls LAPACK gesv which runs at O(n^3) time.
     """
-    users_in_network = get_network(_from)
+
+    with DatabaseManager() as db:
+        result = db.execute("SELECT * FROM categories WHERE category=:flavor", {"flavor": flavor})
+        row = result.fetchone()
+        if not row:
+            # print("Flavor does not exist")
+            return 0.0
+        flavor_type = row["type"]
+        # print("Flavor does exist")
+
+    if flavor_type == "general":
+        users_in_network = get_network(_from)
+        where_str = "WHERE '1'='1'"
+    elif flavor_type == "normal":
+        users_in_network = get_network(_from, [flavor])
+        where_str = get_where_str([flavor])
+    elif flavor_type == "secondary":
+        users_in_network = get_network(_from, [row["secondary_of"]])
+        where_str = get_where_str([row["secondary_of"]])
+    elif flavor_type == "composite":
+        flavors = json.loads(row["composite_of"])
+        flavors.append(flavor)
+        users_in_network = get_network(_from, flavors)
+        where_str = get_where_str(flavors)
+
     if _for not in users_in_network:
+        # print("for is not in network")
         return 0.0
     users_count = len(users_in_network)
     users_index = get_users_index(users_in_network, _from)
 
     votes_matrix = np.zeros((users_count, users_count))
     total_votes = 0
-    for_user_votes = 0
+    user_votes: dict[int, int] = {}
+    for user in users_in_network:
+        user_votes[user] = 0
     with DatabaseManager() as db:
         for user in users_in_network:
-            result = db.execute("SELECT * FROM votes WHERE user_from=:from", {"from": user})
+            result = db.execute(f"SELECT * FROM votes {where_str} AND user_from=:from", {"from": user})
             total = 0
-            votes = {}
+            votes: dict[int, int] = {}
             for v in result.fetchall():
-                votes[v["user_to"]] = v["count"]
+                # print(dict(v))
+                if v["user_to"] in votes:
+                    votes[v["user_to"]] += v["count"]
+                else:
+                    votes[v["user_to"]] = v["count"]
                 total += v["count"]
                 total_votes += v["count"]
-                if v["user_from"] == _for:
-                    for_user_votes += v["count"]
+                if v["user_from"] in user_votes:
+                    user_votes[v["user_from"]] += v["count"]
+                else:
+                    user_votes[v["user_from"]] = v["count"]
             from_id_index = users_index[user]
             for vote in votes:
+                if total == 0:
+                    break
                 to_id_index = users_index[vote]
+                # print(f"Votes: {vote=} {votes[vote]=} / {total=}")
                 votes_matrix[to_id_index, from_id_index] = votes[vote] / total
     for_index = users_index[_for]
+    for_user_votes = user_votes.get(_for, 0)
     for i in range(users_count):
         votes_matrix[i][for_index] = 0
     for i in range(1, users_count):
@@ -111,7 +162,32 @@ def get_votes(_for: int, _from: int) -> float:
     # print("Total Votes:")
     # print(total_votes - for_user_votes)
     # print("Score: ")
-    score = round(scores[for_index] * (total_votes - for_user_votes), 2)
+
+    if flavor_type == "secondary":
+        score = round(scores[for_index] * (total_votes - for_user_votes), 2)
+        with DatabaseManager() as db:
+            for user in users_index:
+                result = db.execute(
+                    "SELECT * FROM votes WHERE category=:cat AND user_from=:from AND user_to=:for",
+                    {"cat": flavor, "from": user, "for": _for},
+                )
+                row = result.fetchone()
+                if not row:
+                    # print(f"Not row for {user}")
+                    continue
+                if user == _from:
+                    # print("Direct add")
+                    score += row["count"]
+                    continue
+                # print(f"{scores=}")
+                # print(f"{user_votes=}")
+                s = round(scores[users_index[user]] * (total_votes - user_votes[user]), 2)
+
+                # print(f"{user=} {s=}")
+                score += row["count"] * s
+    else:
+        score = round(scores[for_index] * (total_votes - for_user_votes), 2)
+
     if score == -0.0:
         score = 0.0
     # print(score)

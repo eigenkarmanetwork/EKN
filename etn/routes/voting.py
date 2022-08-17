@@ -23,6 +23,7 @@ def vote() -> Response:
         "from": str (Username on Service)
         "password": str (Password on ETN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
+        "flavor": Optional[str]
         "amount": Optional[int]
     }
 
@@ -32,15 +33,24 @@ def vote() -> Response:
     403: Username or Password is incorrect.
     403: Service name or key is incorrect.
     404: 'to' is not connected to this service.
+    404: Flavor does not exist.
     200: Success.
     """
-    service, key, to, _from, password, password_type, amount = get_params(
-        ["service_name", "service_key", "to", "from", "password", "password_type", "amount"]
+    service, key, to, _from, password, password_type, flavor, amount = get_params(
+        ["service_name", "service_key", "to", "from", "password", "password_type", "flavor", "amount"]
     )
     amount = int(amount) if amount else 1
 
     if _from == to:
         return Response("User cannot vote for themselves.", 400)
+
+    if not flavor:
+        flavor = "general"
+    else:
+        with DatabaseManager() as db:
+            result = db.execute("SELECT * FROM categories WHERE category=:cat", {"cat": flavor})
+            if not result.fetchone():
+                return Response("Flavor does not exist.", 404)
 
     service_obj = verify_service(service, key)
     if not service_obj:
@@ -55,23 +65,28 @@ def vote() -> Response:
 
     with DatabaseManager() as db:
         result = db.execute(
-            "SELECT * FROM votes WHERE user_from=:from AND user_to=:to",
-            {"from": from_user["id"], "to": to_user["id"]},
+            "SELECT * FROM votes WHERE user_from=:from AND user_to=:to AND category=:cat",
+            {"from": from_user["id"], "to": to_user["id"], "cat": flavor},
         )
         current = result.fetchone()
         if current:
             if (current["count"] + amount) < 0:
                 return Response("Cannot have a negative amount of trust.", 400)
             db.execute(
-                "UPDATE votes SET count=:count WHERE user_from=:from AND user_to=:to",
-                {"from": from_user["id"], "to": to_user["id"], "count": current["count"] + amount},
+                "UPDATE votes SET count=:count WHERE user_from=:from AND user_to=:to AND category=:cat",
+                {
+                    "from": from_user["id"],
+                    "to": to_user["id"],
+                    "count": current["count"] + amount,
+                    "cat": flavor,
+                },
             )
         else:
             if amount < 0:
                 return Response("Cannot have a negative amount of trust.", 400)
             db.execute(
-                "INSERT INTO votes (user_from, user_to, count) VALUES (?, ?, ?)",
-                (from_user["id"], to_user["id"], amount),
+                "INSERT INTO votes (user_from, user_to, count, category) VALUES (?, ?, ?, ?)",
+                (from_user["id"], to_user["id"], amount, flavor),
             )
 
     return Response("Success.", 200)
@@ -90,6 +105,7 @@ def get_vote_count() -> Response:
         "from": str (Username on Service)
         "password": str (Password on ETN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
+        "flavor": Optional[str]
     }
 
     Returns:
@@ -97,19 +113,29 @@ def get_vote_count() -> Response:
     403: Username or Password is incorrect.
     403: Service name or key is incorrect.
     404: 'for' is not connected to this service.
+    404: Flavor does not exist.
     200: JSON:
     {
         "for": str (Username Provided)
         "from": str (Username Provided)
         "votes": int
+        "flavor": str
     }
     """
-    service, key, _for, _from, password, password_type = get_params(
-        ["service_name", "service_key", "for", "from", "password", "password_type"]
+    service, key, _for, _from, password, password_type, flavor = get_params(
+        ["service_name", "service_key", "for", "from", "password", "password_type", "flavor"]
     )
 
     if _from == _for:
         return Response("User cannot view themselves.", 400)
+
+    if not flavor:
+        flavor = "general"
+    else:
+        with DatabaseManager() as db:
+            result = db.execute("SELECT * FROM categories WHERE category=:cat", {"cat": flavor})
+            if not result.fetchone():
+                return Response("Flavor does not exist.", 404)
 
     service_obj = verify_service(service, key)
     if not service_obj:
@@ -122,11 +148,11 @@ def get_vote_count() -> Response:
     if not for_user:
         return Response("'for' is not connected to this service.", 404)
 
-    response = {"for": _for, "from": _from, "votes": 0}
+    response = {"for": _for, "from": _from, "votes": 0, "flavor": flavor}
     with DatabaseManager() as db:
         result = db.execute(
-            "SELECT * FROM votes WHERE user_from=:from AND user_to=:to",
-            {"from": from_user["id"], "to": for_user["id"]},
+            "SELECT * FROM votes WHERE user_from=:from AND user_to=:to AND category=:cat",
+            {"from": from_user["id"], "to": for_user["id"], "cat": flavor},
         )
         current = result.fetchone()
         if current:
@@ -146,6 +172,7 @@ def get_score() -> Response:
         "from": str (Username on Service)
         "password": str (Password on ETN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
+        "flavor": Optional[str]
     }
 
     Returns:
@@ -153,18 +180,28 @@ def get_score() -> Response:
     403: Username or Password is incorrect.
     403: Service name or key is incorrect.
     404: 'for' is not connected to this service.
+    404: Flavor does not exist.
     200: JSON:
     {
         "for": str (Username Provided)
         "from": str (Username Provided)
         "score": float
+        "flavor": str
     }
     """
-    service, key, _for, _from, password, password_type = get_params(
-        ["service_name", "service_key", "for", "from", "password", "password_type"]
+    service, key, _for, _from, password, password_type, flavor = get_params(
+        ["service_name", "service_key", "for", "from", "password", "password_type", "flavor"]
     )
     if _for == _from:
         return Response("User cannot view themselves.", 400)
+
+    if not flavor:
+        flavor = "general"
+    else:
+        with DatabaseManager() as db:
+            result = db.execute("SELECT * FROM categories WHERE category=:cat", {"cat": flavor})
+            if not result.fetchone():
+                return Response("Flavor does not exist.", 404)
 
     service_obj = verify_service(service, key)
     if not service_obj:
@@ -177,8 +214,8 @@ def get_score() -> Response:
     if not for_user:
         return Response("'for' is not connected to this service.", 404)
 
-    score = get_votes(for_user["id"], from_user["id"])
-    response = {"for": _for, "from": _from, "score": score}
+    score = get_votes(for_user["id"], from_user["id"], flavor)
+    response = {"for": _for, "from": _from, "score": score, "flavor": flavor}
     return Response(json.dumps(response), 200)
 
 
