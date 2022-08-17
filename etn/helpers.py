@@ -83,18 +83,17 @@ def get_votes(_for: int, _from: int) -> float:
 
     votes_matrix = np.zeros((users_count, users_count))
     total_votes = 0
-    for_user_votes = 0
     with DatabaseManager() as db:
+        for_user_votes = db.execute("SELECT IFNULL(sum(count), 0) as for_user_votes FROM votes where user_from = :from", {"from": _for}).fetchall()[0][0]
         for user in users_in_network:
-            result = db.execute("SELECT * FROM votes WHERE user_from=:from", {"from": user})
+            result = db.execute("SELECT user_to, sum(count) as count FROM votes WHERE user_from=:from group by user_to",
+                                {"from": user})
             total = 0
             votes = {}
             for v in result.fetchall():
                 votes[v["user_to"]] = v["count"]
                 total += v["count"]
                 total_votes += v["count"]
-                if v["user_from"] == _for:
-                    for_user_votes += v["count"]
             from_id_index = users_index[user]
             for vote in votes:
                 to_id_index = users_index[vote]
