@@ -2,8 +2,11 @@ from etn.database import DatabaseManager
 from etn.helpers import get_votes, get_network, get_users_index
 import time
 
+"""
+WIP: Please ignore
 with DatabaseManager() as db:
     print
+"""
 
 all = []
 ts_all = []
