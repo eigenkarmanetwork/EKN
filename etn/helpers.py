@@ -40,14 +40,20 @@ def get_network(user: int) -> frozenset[int]:
     """
     users: set[int] = {user}
     to_process: set[int] = {user}
+    builder = str(user)
     with DatabaseManager() as db:
-        while len(to_process) > 0 and len(users) < NETWORK_SIZE_LIMIT:
+        while len(to_process) > 0 and (len(users) + len(to_process)) < NETWORK_SIZE_LIMIT:
+            not_in_str = "AND user_to NOT IN (" + (builder) + ")"
             u = to_process.pop()
-            result = db.execute("SELECT * FROM votes WHERE user_from=:user", {"user": u})
+            # print(f"SELECT * FROM votes WHERE user_from=:user {not_in_str}")
+            result = db.execute(f"SELECT * FROM votes WHERE user_from=:user {not_in_str}", {"user": u})
             for uu in result.fetchall():
                 if uu["user_to"] not in users:
-                    users.add(uu["user_to"])
-                    to_process.add(uu["user_to"])
+                    to_add = uu["user_to"]
+                    users.add(to_add)
+                    to_process.add(to_add)
+                    builder += f", {to_add}"
+    users = users.union(to_process)
     return frozenset(users)
 
 
