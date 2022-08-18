@@ -129,6 +129,9 @@ def get_vote_count() -> Response:
     if _from == _for:
         return Response("User cannot view themselves.", 400)
 
+    flavor_str = ""
+    if flavor:
+        flavor_str = "AND category=:cat"
     if not flavor:
         flavor = "general"
     else:
@@ -151,7 +154,7 @@ def get_vote_count() -> Response:
     response = {"for": _for, "from": _from, "votes": 0, "flavor": flavor}
     with DatabaseManager() as db:
         result = db.execute(
-            "SELECT * FROM votes WHERE user_from=:from AND user_to=:to AND category=:cat",
+            f'SELECT sum("count") AS "count" FROM votes WHERE user_from=:from AND user_to=:to {flavor_str}',
             {"from": from_user["id"], "to": for_user["id"], "cat": flavor},
         )
         current = result.fetchone()
