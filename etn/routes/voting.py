@@ -159,7 +159,8 @@ def get_vote_count() -> Response:
         )
         current = result.fetchone()
         if current:
-            response["votes"] = current["count"]
+            if current["count"]:
+                response["votes"] = current["count"]
 
     return Response(json.dumps(response), 200)
 
