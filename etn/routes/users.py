@@ -10,6 +10,7 @@ from etn.helpers import (
 )
 from flask import Response
 from typing import Optional
+import hashlib
 import json
 import secrets
 import time
@@ -193,27 +194,35 @@ def get_current_key() -> Response:
 
 
 @allow_cors
-def verify_credentials_hash_route() -> Response:
+def change_password() -> Response:
     """
-    DEPRECATED
-    Use verify_credentials instead.
-
-    Used to verify ETN user credentials for website login, or other purposes.
+    Used to change a user's ETN password.
 
     Message Structure:
     {
         "username": str
         "password": str
+        "new_password": str
     }
     Returns:
     403: Username or Password is incorrect.
     200: Success.
     """
-    username, password = get_params(["username", "password"])
+    username, password, new_password = get_params(["username", "password", "new_password"])
 
     user = verify_credentials_hash(username, password)
     if not user:
         return Response("Username or Password is incorrect.", 403)
+
+    salt = secrets.token_hex(6)
+    sha512 = hashlib.new("sha512")
+    sha512.update(f"{new_password}:{salt}".encode("utf8"))
+    password_hash = sha512.hexdigest()
+    with DatabaseManager() as db:
+        db.execute(
+            "UPDATE users SET password=:password, salt=:salt WHERE id=:id",
+            {"password": password_hash, "salt": salt, "id": user["id"]},
+        )
 
     return Response("Success.", 200)
 
