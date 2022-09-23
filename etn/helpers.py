@@ -45,7 +45,7 @@ def get_where_str(flavors: Optional[list[str]]) -> str:
     return where_str
 
 
-def get_network(user: int, flavors: Optional[list[str]] = None) -> set[int]:
+def get_network(user: int, flavors: Optional[list[str]] = None, checking: Optional[int] = None) -> set[int]:
     """
     Function runs at O(n^2) time.
     """
@@ -55,6 +55,8 @@ def get_network(user: int, flavors: Optional[list[str]] = None) -> set[int]:
     with DatabaseManager() as db:
         while len(to_process) > 0 and len(users) < NETWORK_SIZE_LIMIT:
             u = to_process.pop()
+            if u == checking:
+                continue
             result = db.execute(f"SELECT * FROM votes {where_str} AND user_from=:user", {"user": u})
             for uu in result.fetchall():
                 if uu["user_to"] not in users:
@@ -90,18 +92,18 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
         # print("Flavor does exist")
 
     if flavor_type == "general":
-        users_in_network = get_network(_from)
+        users_in_network = get_network(_from, checking=_for)
         where_str = "WHERE '1'='1'"
     elif flavor_type == "normal":
-        users_in_network = get_network(_from, [flavor])
+        users_in_network = get_network(_from, [flavor], _for)
         where_str = get_where_str([flavor])
     elif flavor_type == "secondary":
-        users_in_network = get_network(_from, [row["secondary_of"]])
+        users_in_network = get_network(_from, [row["secondary_of"]], _for)
         where_str = get_where_str([row["secondary_of"]])
     elif flavor_type == "composite":
         flavors = json.loads(row["composite_of"])
         flavors.append(flavor)
-        users_in_network = get_network(_from, flavors)
+        users_in_network = get_network(_from, flavors, _for)
         where_str = get_where_str(flavors)
 
     if _for not in users_in_network:
