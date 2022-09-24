@@ -119,6 +119,8 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
         user_votes[user] = 0
     with DatabaseManager() as db:
         for user in users_in_network:
+            if user == _for:
+                continue
             result = db.execute(f"SELECT * FROM votes {where_str} AND user_from=:from", {"from": user})
             total = 0
             votes: dict[int, int] = {}
