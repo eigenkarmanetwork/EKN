@@ -86,10 +86,8 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
         result = db.execute("SELECT * FROM categories WHERE category=:flavor", {"flavor": flavor})
         row = result.fetchone()
         if not row:
-            # print("Flavor does not exist")
             return 0.0
         flavor_type = row["type"]
-        # print("Flavor does exist")
 
     if flavor_type == "general":
         users_in_network = get_network(_from, checking=_for)
@@ -107,7 +105,6 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
         where_str = get_where_str(flavors)
 
     if _for not in users_in_network:
-        # print("for is not in network")
         return 0.0
     users_count = len(users_in_network)
     users_index = get_users_index(users_in_network, _from)
@@ -123,7 +120,6 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
             total = 0
             votes: dict[int, int] = {}
             for v in result.fetchall():
-                # print(dict(v))
                 if v["user_to"] in votes:
                     votes[v["user_to"]] += v["count"]
                 else:
