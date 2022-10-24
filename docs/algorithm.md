@@ -63,6 +63,8 @@ Next, we pull all the data we need from the database.  For each node in the netw
 ```py3
 with DatabaseManager() as db:
     for user in users_in_network:
+        if user == _for:
+            continue
         result = db.execute(f"SELECT * FROM votes {where_str} AND user_from=:from", {"from": user})
         total = 0
         votes: dict[int, int] = {}
