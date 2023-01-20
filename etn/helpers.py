@@ -156,7 +156,18 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     # print("Users Matrix:")
     # print(users_matrix)
 
-    scores = list(np.linalg.solve(votes_matrix, users_matrix))
+    try:
+        scores = list(np.linalg.solve(votes_matrix, users_matrix))
+    except np.linalg.LinAlgError:
+        """
+        If there is a singular matrix trust no one, until we find a better
+        solution, then give the trust `from` has given `for` directly.
+        For now, this is the best conservative option for now.
+        
+        """
+        scores = [0] * len(users_matrix)
+        from_index = users_index[_from]
+        scores[for_index] = votes_matrix[for_index][from_index]
     # print("Scores:")
     # print(scores)
     # print("Total Votes:")
