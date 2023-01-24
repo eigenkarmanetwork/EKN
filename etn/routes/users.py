@@ -312,7 +312,7 @@ def change_security() -> Response:
     403: Username or Password is incorrect.
     200: Success.
     """
-    username, password, password_type, security = get_params(
+    username, password, security = get_params(
         ["username", "password", "security"]
     )
 
