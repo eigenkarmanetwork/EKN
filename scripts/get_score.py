@@ -15,5 +15,7 @@ data = {
     "from": from_user,
     "password": password,
 }
-r = requests.post("http://127.0.0.1:31415/get_score", data=json.dumps(data), headers=headers)
+r = requests.post(
+    "http://127.0.0.1:31415/get_score", data=json.dumps(data), headers=headers
+)
 print(f"{r.status_code}: {r.text}")

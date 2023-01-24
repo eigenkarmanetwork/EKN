@@ -45,7 +45,9 @@ def get_where_str(flavors: Optional[list[str]]) -> str:
     return where_str
 
 
-def get_network(user: int, flavors: Optional[list[str]] = None, checking: Optional[int] = None) -> set[int]:
+def get_network(
+    user: int, flavors: Optional[list[str]] = None, checking: Optional[int] = None
+) -> set[int]:
     """
     Function runs at O(n^2) time.
     """
@@ -57,7 +59,9 @@ def get_network(user: int, flavors: Optional[list[str]] = None, checking: Option
             u = to_process.pop()
             if u == checking:
                 continue
-            result = db.execute(f"SELECT * FROM votes {where_str} AND user_from=:user", {"user": u})
+            result = db.execute(
+                f"SELECT * FROM votes {where_str} AND user_from=:user", {"user": u}
+            )
             for uu in result.fetchall():
                 if uu["user_to"] not in users:
                     users.add(uu["user_to"])
@@ -83,7 +87,9 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     """
 
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM categories WHERE category=:flavor", {"flavor": flavor})
+        result = db.execute(
+            "SELECT * FROM categories WHERE category=:flavor", {"flavor": flavor}
+        )
         row = result.fetchone()
         if not row:
             return 0.0
@@ -118,7 +124,9 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
         for user in users_in_network:
             if user == _for:
                 continue
-            result = db.execute(f"SELECT * FROM votes {where_str} AND user_from=:from", {"from": user})
+            result = db.execute(
+                f"SELECT * FROM votes {where_str} AND user_from=:from", {"from": user}
+            )
             total = 0
             votes: dict[int, int] = {}
             for v in result.fetchall():
@@ -163,7 +171,7 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
         If there is a singular matrix trust no one, until we find a better
         solution, then give the trust `from` has given `for` directly.
         For now, this is the best conservative option for now.
-        
+
         """
         scores = [0] * len(users_matrix)
         from_index = users_index[_from]
@@ -192,7 +200,9 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
                     continue
                 # print(f"{scores=}")
                 # print(f"{user_votes=}")
-                s = round(scores[users_index[user]] * (total_votes - user_votes[user]), 2)
+                s = round(
+                    scores[users_index[user]] * (total_votes - user_votes[user]), 2
+                )
 
                 # print(f"{user=} {s=}")
                 score += row["count"] * s
@@ -206,7 +216,10 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
 
 
 def verify_credentials(
-    username: str, password: str, password_type: PASSWORD_TYPE = None, service_id: Optional[int] = None
+    username: str,
+    password: str,
+    password_type: PASSWORD_TYPE = None,
+    service_id: Optional[int] = None,
 ) -> Optional[sqlite3.Row]:
     """
     Verifies an ETN username and password/key.
@@ -236,7 +249,9 @@ def verify_credentials_raw(username: str, password: str) -> Optional[sqlite3.Row
     """
 
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         user = result.fetchone()
         if not user:
             return None
@@ -256,7 +271,9 @@ def verify_credentials_hash(username: str, password_hash: str) -> Optional[sqlit
     """
 
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         user = result.fetchone()
         if not user:
             return None
@@ -272,13 +289,17 @@ def verify_session_key(username: str, key: str) -> Optional[sqlite3.Row]:
     """
 
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         user = result.fetchone()
         if not user:
             return None
         if user["security"] == 2:
             return None
-        result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+        result = db.execute(
+            "SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]}
+        )
         row = result.fetchone()
         if not row:
             return None
@@ -296,7 +317,9 @@ def verify_service(service: str, key: str) -> Optional[sqlite3.Row]:
     """
 
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM services WHERE name=:name", {"name": service})
+        result = db.execute(
+            "SELECT * FROM services WHERE name=:name", {"name": service}
+        )
         service_obj = result.fetchone()
         if not service_obj:
             return None
@@ -309,7 +332,9 @@ def verify_service(service: str, key: str) -> Optional[sqlite3.Row]:
         return service_obj
 
 
-def resolve_service_username(service_id: int, service_user: str) -> Optional[sqlite3.Row]:
+def resolve_service_username(
+    service_id: int, service_user: str
+) -> Optional[sqlite3.Row]:
     """
     Gets an ETN username from a service id and the username on the service.
     """
@@ -322,14 +347,18 @@ def resolve_service_username(service_id: int, service_user: str) -> Optional[sql
         service_user_obj = result.fetchone()
         if not service_user_obj:
             return None
-        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": service_user_obj["user"]})
+        result = db.execute(
+            "SELECT * FROM users WHERE id=:id", {"id": service_user_obj["user"]}
+        )
         user = result.fetchone()
         if not user:
             return None
         return user
 
 
-def verify_service_username(service_id: int, service_user: str, key: str) -> Optional[sqlite3.Row]:
+def verify_service_username(
+    service_id: int, service_user: str, key: str
+) -> Optional[sqlite3.Row]:
     """
     Gets an ETN username from a service id and the username on the service.
     """
@@ -344,7 +373,9 @@ def verify_service_username(service_id: int, service_user: str, key: str) -> Opt
             return None
         if service_user_obj["key"] is None or service_user_obj["key"] != key:
             return None
-        result = db.execute("SELECT * FROM users WHERE id=:id", {"id": service_user_obj["user"]})
+        result = db.execute(
+            "SELECT * FROM users WHERE id=:id", {"id": service_user_obj["user"]}
+        )
         user = result.fetchone()
         if not user:
             return None
@@ -358,12 +389,16 @@ def update_session_key(username: str) -> None:
     Updates a user's session key if neccessary.
     """
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         user = result.fetchone()
         assert user is not None
         if user["security"] == 2:
             return
-        result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+        result = db.execute(
+            "SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]}
+        )
         row = result.fetchone()
         gen_key = True
         if row:

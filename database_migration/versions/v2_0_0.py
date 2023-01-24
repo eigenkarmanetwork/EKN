@@ -8,7 +8,9 @@ if TYPE_CHECKING:
 
 def update(database: "DatabaseManager") -> None:
     with database as db:
-        db.execute("CREATE TABLE IF NOT EXISTS categories (category TEXT PRIMARY KEY UNIQUE)")
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS categories (category TEXT PRIMARY KEY UNIQUE)"
+        )
         db.execute("ALTER TABLE services ADD COLUMN salt TEXT")
         db.commit()
         result = db.execute("SELECT * FROM services")

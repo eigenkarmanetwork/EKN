@@ -37,7 +37,16 @@ def vote() -> Response:
     200: Success.
     """
     service, key, to, _from, password, password_type, flavor, amount = get_params(
-        ["service_name", "service_key", "to", "from", "password", "password_type", "flavor", "amount"]
+        [
+            "service_name",
+            "service_key",
+            "to",
+            "from",
+            "password",
+            "password_type",
+            "flavor",
+            "amount",
+        ]
     )
     amount = int(amount) if amount else 1
 
@@ -48,7 +57,9 @@ def vote() -> Response:
         flavor = "general"
     else:
         with DatabaseManager() as db:
-            result = db.execute("SELECT * FROM categories WHERE category=:cat", {"cat": flavor})
+            result = db.execute(
+                "SELECT * FROM categories WHERE category=:cat", {"cat": flavor}
+            )
             if not result.fetchone():
                 return Response("Flavor does not exist.", 404)
 
@@ -123,7 +134,15 @@ def get_vote_count() -> Response:
     }
     """
     service, key, _for, _from, password, password_type, flavor = get_params(
-        ["service_name", "service_key", "for", "from", "password", "password_type", "flavor"]
+        [
+            "service_name",
+            "service_key",
+            "for",
+            "from",
+            "password",
+            "password_type",
+            "flavor",
+        ]
     )
 
     if _from == _for:
@@ -136,7 +155,9 @@ def get_vote_count() -> Response:
         flavor = "general"
     else:
         with DatabaseManager() as db:
-            result = db.execute("SELECT * FROM categories WHERE category=:cat", {"cat": flavor})
+            result = db.execute(
+                "SELECT * FROM categories WHERE category=:cat", {"cat": flavor}
+            )
             if not result.fetchone():
                 return Response("Flavor does not exist.", 404)
 
@@ -194,7 +215,15 @@ def get_score() -> Response:
     }
     """
     service, key, _for, _from, password, password_type, flavor = get_params(
-        ["service_name", "service_key", "for", "from", "password", "password_type", "flavor"]
+        [
+            "service_name",
+            "service_key",
+            "for",
+            "from",
+            "password",
+            "password_type",
+            "flavor",
+        ]
     )
     if _for == _from:
         return Response("User cannot view themselves.", 400)
@@ -203,7 +232,9 @@ def get_score() -> Response:
         flavor = "general"
     else:
         with DatabaseManager() as db:
-            result = db.execute("SELECT * FROM categories WHERE category=:cat", {"cat": flavor})
+            result = db.execute(
+                "SELECT * FROM categories WHERE category=:cat", {"cat": flavor}
+            )
             if not result.fetchone():
                 return Response("Flavor does not exist.", 404)
 

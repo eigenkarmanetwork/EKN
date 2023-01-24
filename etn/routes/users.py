@@ -74,11 +74,18 @@ def verify_credentials_route() -> Response:
                 connection_key = secrets.token_hex(16)
                 db.execute(
                     "UPDATE connections SET key=:connection_key WHERE user=:user_id AND service=:service_id",
-                    {"connection_key": connection_key, "user_id": user["id"], "service_id": service_id},
+                    {
+                        "connection_key": connection_key,
+                        "user_id": user["id"],
+                        "service_id": service_id,
+                    },
                 )
     if user["security"] <= 1:
         with DatabaseManager() as db:
-            result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+            result = db.execute(
+                "SELECT * FROM session_keys WHERE user=:user_id",
+                {"user_id": user["id"]},
+            )
             row = result.fetchone()
             gen_key = True
             if row:
@@ -102,7 +109,11 @@ def verify_credentials_route() -> Response:
                 )
 
     resp = {
-        "password": connection_key if connection_key else session_key if session_key else user["password"],
+        "password": connection_key
+        if connection_key
+        else session_key
+        if session_key
+        else user["password"],
         "password_type": "connection_key"
         if connection_key
         else "session_key"
@@ -136,7 +147,9 @@ def get_current_key() -> Response:
     }
     """
 
-    username, service_name, service_key = get_params(["username", "service_name", "service_key"])
+    username, service_name, service_key = get_params(
+        ["username", "service_name", "service_key"]
+    )
 
     service = verify_service(service_name, service_key)
     if not service:
@@ -164,11 +177,18 @@ def get_current_key() -> Response:
                 connection_key = secrets.token_hex(16)
                 db.execute(
                     "UPDATE connections SET key=:connection_key WHERE user=:user_id AND service=:service_id",
-                    {"connection_key": connection_key, "user_id": user["id"], "service_id": service_id},
+                    {
+                        "connection_key": connection_key,
+                        "user_id": user["id"],
+                        "service_id": service_id,
+                    },
                 )
     if user["security"] == 1:
         with DatabaseManager() as db:
-            result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+            result = db.execute(
+                "SELECT * FROM session_keys WHERE user=:user_id",
+                {"user_id": user["id"]},
+            )
             row = result.fetchone()
             if row:
                 if row["expires"] > int(time.time()):
@@ -207,7 +227,9 @@ def change_password() -> Response:
     403: Username or Password is incorrect.
     200: Success.
     """
-    username, password, new_password = get_params(["username", "password", "new_password"])
+    username, password, new_password = get_params(
+        ["username", "password", "new_password"]
+    )
 
     user = verify_credentials(username, password, password_type="raw_password")
     if not user:
@@ -241,7 +263,9 @@ def gdpr_view() -> Response:
     403: Username or Password is incorrect.
     200: JSON List of every row of data.
     """
-    username, password, password_type = get_params(["username", "password", "password_type"])
+    username, password, password_type = get_params(
+        ["username", "password", "password_type"]
+    )
 
     user = verify_credentials(username, password, password_type)
     if not user:
@@ -255,12 +279,16 @@ def gdpr_view() -> Response:
         del row["salt"]
         rows.append(row)
 
-        result = db.execute("SELECT * FROM connections WHERE user=:id", {"id": user["id"]})
+        result = db.execute(
+            "SELECT * FROM connections WHERE user=:id", {"id": user["id"]}
+        )
         for raw_row in result.fetchall():
             row = dict(raw_row)
             rows.append(row)
 
-        result = db.execute("SELECT * FROM votes WHERE user_from=:id", {"id": user["id"]})
+        result = db.execute(
+            "SELECT * FROM votes WHERE user_from=:id", {"id": user["id"]}
+        )
         for raw_row in result.fetchall():
             row = dict(raw_row)
             rows.append(row)
@@ -302,7 +330,8 @@ def change_security() -> Response:
 
     with DatabaseManager() as db:
         db.execute(
-            "UPDATE users SET security=:security WHERE id=:id", {"security": security, "id": user["id"]}
+            "UPDATE users SET security=:security WHERE id=:id",
+            {"security": security, "id": user["id"]},
         )
     update_session_key(username)
     return Response("Success.", 200)

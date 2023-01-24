@@ -45,7 +45,9 @@ def update_database(database: "DatabaseManager") -> None:
 
 def get_version(database: "DatabaseManager") -> str:
     with database as db:
-        result = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='etn_settings'")
+        result = db.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='etn_settings'"
+        )
         if not result.fetchone():
             return "1.0.0"
         result = db.execute("SELECT value FROM etn_settings WHERE setting='version'")

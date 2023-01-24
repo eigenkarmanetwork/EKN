@@ -33,13 +33,18 @@ def register_user() -> Response:
     sha512.update(f"{password}:{salt}".encode("utf8"))
     password_hash = sha512.hexdigest()
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         if result.fetchone():
             return Response("Username is not available.", 409)  # 409: Conflict
         db.execute(
-            "INSERT INTO users (username, password, salt) VALUES (?, ?, ?)", (username, password_hash, salt)
+            "INSERT INTO users (username, password, salt) VALUES (?, ?, ?)",
+            (username, password_hash, salt),
         )
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         id = result.fetchone()["id"]
         db.execute(
             "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
@@ -63,7 +68,9 @@ def register_temp_user() -> Response:
     409: Username is not available.
     200: Registration Successful.
     """
-    service_user, service, key = get_params(["service_user", "service_name", "service_key"])
+    service_user, service, key = get_params(
+        ["service_user", "service_name", "service_key"]
+    )
     username = f"{service}:{service_user}"  # Helps keep username unique
     service_obj = verify_service(service, key)
     if not service_obj:
@@ -71,14 +78,18 @@ def register_temp_user() -> Response:
     service_id = service_obj["id"]
 
     with DatabaseManager() as db:
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         if result.fetchone():
             return Response("Username is not available.", 409)
         db.execute(
             "INSERT INTO users (username, password, salt, temp) VALUES (?, ?, ?, ?)",
             (username, None, None, 1),
         )
-        result = db.execute("SELECT * FROM users WHERE username=:username", {"username": username})
+        result = db.execute(
+            "SELECT * FROM users WHERE username=:username", {"username": username}
+        )
         id = result.fetchone()["id"]
         db.execute(
             "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
@@ -110,7 +121,10 @@ def register_service() -> Response:
         sha512 = hashlib.new("sha512")
         sha512.update(f"{key}:{salt}".encode("utf8"))
         key_hash = sha512.hexdigest()
-        db.execute("INSERT INTO services (name, key, salt) VALUES (?, ?, ?)", (name, key_hash, salt))
+        db.execute(
+            "INSERT INTO services (name, key, salt) VALUES (?, ?, ?)",
+            (name, key_hash, salt),
+        )
         return Response(key, 200)
 
 
@@ -141,7 +155,14 @@ def register_connection() -> Response:
     }
     """
     service, key, service_user, username, password, password_type = get_params(
-        ["service_name", "service_key", "service_user", "username", "password", "password_type"]
+        [
+            "service_name",
+            "service_key",
+            "service_user",
+            "username",
+            "password",
+            "password_type",
+        ]
     )
 
     service_obj = verify_service(service, key)
@@ -167,10 +188,14 @@ def register_connection() -> Response:
         else:
             # Possibly a temp account!
             temp_user_id = int(row["user"])
-            result = db.execute("SELECT * FROM users WHERE id=:id", {"id": temp_user_id})
+            result = db.execute(
+                "SELECT * FROM users WHERE id=:id", {"id": temp_user_id}
+            )
             temp_user = result.fetchone()
             if not temp_user:
-                raise RuntimeError("Service user is connected to a non existant account")
+                raise RuntimeError(
+                    "Service user is connected to a non existant account"
+                )
             if int(temp_user["temp"]) == 0:
                 return Response("Service user already connected to the ETN.", 409)
             # Temp account found! Migrating...
@@ -182,7 +207,9 @@ def register_connection() -> Response:
                 "UPDATE votes SET user_to=:new_id WHERE user_to=:temp_id",
                 {"new_id": user["id"], "temp_id": temp_user_id},
             )
-            db.execute("DELETE FROM users WHERE id=:id and temp=1", {"id": temp_user_id})
+            db.execute(
+                "DELETE FROM users WHERE id=:id and temp=1", {"id": temp_user_id}
+            )
             db.execute(
                 "DELETE FROM connections WHERE user=:id and service=:service_id",
                 {"id": temp_user_id, "service_id": service_id},
@@ -210,11 +237,18 @@ def register_connection() -> Response:
                 connection_key = secrets.token_hex(16)
                 db.execute(
                     "UPDATE connections SET key=:connection_key WHERE user=:user_id AND service=:service_id",
-                    {"connection_key": connection_key, "user_id": user["id"], "service_id": service_id},
+                    {
+                        "connection_key": connection_key,
+                        "user_id": user["id"],
+                        "service_id": service_id,
+                    },
                 )
     if user["security"] == 1:
         with DatabaseManager() as db:
-            result = db.execute("SELECT * FROM session_keys WHERE user=:user_id", {"user_id": user["id"]})
+            result = db.execute(
+                "SELECT * FROM session_keys WHERE user=:user_id",
+                {"user_id": user["id"]},
+            )
             row = result.fetchone()
             gen_key = True
             if row:
@@ -238,7 +272,11 @@ def register_connection() -> Response:
                 )
 
     resp = {
-        "password": connection_key if connection_key else session_key if session_key else user["password"],
+        "password": connection_key
+        if connection_key
+        else session_key
+        if session_key
+        else user["password"],
         "password_type": "connection_key"
         if connection_key
         else "session_key"

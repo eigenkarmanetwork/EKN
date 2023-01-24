@@ -70,13 +70,19 @@ class DatabaseManager:
         cur.execute(
             "CREATE TABLE IF NOT EXISTS connections (service INTEGER, service_user TEXT, user INTEGER, key TEXT DEFAULT NULL)"
         )
-        cur.execute("CREATE TABLE IF NOT EXISTS etn_settings (setting TEXT PRIMARY KEY UNIQUE, value TEXT)")
-        cur.execute("CREATE TABLE IF NOT EXISTS categories (category TEXT PRIMARY KEY UNIQUE)")
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS etn_settings (setting TEXT PRIMARY KEY UNIQUE, value TEXT)"
+        )
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS categories (category TEXT PRIMARY KEY UNIQUE)"
+        )
         cur.execute(
             "CREATE TABLE IF NOT EXISTS session_keys (user INTEGER PRIMARY KEY, key TEXT, expires INTEGER)"
         )
         conn.commit()
-        cur.execute("INSERT INTO etn_settings (setting, value) VALUES ('version', '2.1.1')")
+        cur.execute(
+            "INSERT INTO etn_settings (setting, value) VALUES ('version', '2.1.1')"
+        )
         cur.execute("INSERT INTO categories (category) VALUES ('general')")
         cur.execute(
             "INSERT INTO services (name, key, salt) VALUES (?, ?, ?)",
