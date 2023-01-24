@@ -3,7 +3,6 @@ from etn.decs import allow_cors
 from etn.helpers import (
     get_params,
     verify_credentials,
-    verify_credentials_hash,
     verify_service,
     resolve_service_username,
     update_session_key,
@@ -210,7 +209,7 @@ def change_password() -> Response:
     """
     username, password, new_password = get_params(["username", "password", "new_password"])
 
-    user = verify_credentials_hash(username, password)
+    user = verify_credentials(username, password, password_type="raw_password")
     if not user:
         return Response("Username or Password is incorrect.", 403)
 
@@ -279,7 +278,6 @@ def change_security() -> Response:
         "username": str
         "password": str
         "security": Literal[0, 1, 2]
-        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
     Returns:
     400: Invalid security option.
@@ -287,7 +285,7 @@ def change_security() -> Response:
     200: Success.
     """
     username, password, password_type, security = get_params(
-        ["username", "password", "password_type", "security"]
+        ["username", "password", "security"]
     )
 
     try:
@@ -295,7 +293,7 @@ def change_security() -> Response:
     except ValueError:
         return Response("Invalid security option.", 400)
 
-    user = verify_credentials(username, password, password_type)
+    user = verify_credentials(username, password, password_type="raw_password")
     if not user:
         return Response("Username or Password is incorrect.", 403)
 
