@@ -108,6 +108,8 @@ def get_vote_count() -> Response:
     """
     Get how many times a user has voted for someone. This is NOT their trust score.
 
+    If flavor is not specified, it will return the total number of times a user has voted for someone in all categories.
+
     Message Structure:
     {
         "service_name": str (Service's name)

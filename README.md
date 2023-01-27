@@ -225,7 +225,9 @@ Returns
 
 Description:
 
-Allows a service to get the number of times a user (A) has been trusted by user (B) on behalf of a user (B). `passwword_type` is optional and defaults to `"raw_password"`. `flavor` is optional and defaults to `"general"`.
+Allows a service to get the number of times a user (A) has been trusted by user (B) on behalf of a user (B). `passwword_type` is optional and defaults to `"raw_password"`.
+
+If `flavor` is not specified, it will return the total number of times a user (B) has voted for a user (A) in *all* categories.
 
 ##### Get Trust Score
 
