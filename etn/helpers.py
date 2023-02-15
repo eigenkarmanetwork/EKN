@@ -152,30 +152,30 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     for i in range(users_count):
         votes_matrix[i][for_index] = 0
     for i in range(1, users_count):
-        votes_matrix[i, i] = -1
-    votes_matrix[0, 0] = 1
+        votes_matrix[i, i] = 0
     # print("User Index:")
     # print(users_index)
     # print("Votes Matrix:")
-    # print(votes_matrix)
+    # print(votes_matrix.T[0])
 
-    users_matrix = np.zeros(users_count)
-    users_matrix[0] = 1  # Viewer has 1 Trust
-    # print("Users Matrix:")
-    # print(users_matrix)
+    scores = np.zeros(users_count)
+    scores[0] = 1  # Viewer has 100% Trust
 
-    try:
-        scores = list(np.linalg.solve(votes_matrix, users_matrix))
-    except np.linalg.LinAlgError:
-        """
-        If there is a singular matrix trust no one, until we find a better
-        solution, then give the trust `from` has given `for` directly.
-        For now, this is the best conservative option for now.
+    decay = 0.25
+    solved = False
+    for _ in range(1000):  # Only do 1000 rounds
+        old_score = scores
+        scores = np.dot(votes_matrix, scores) * decay
+        scores[0] = 1  # Viewer will always have 100% Trust
 
-        """
-        scores = [0] * len(users_matrix)
-        from_index = users_index[_from]
-        scores[for_index] = votes_matrix[for_index][from_index]
+        # Check if solved
+        solved = True
+        for a, b in zip(old_score, scores):
+            if not round(a, 8) == round(b, 8):
+                solved = False
+                break
+        if solved:
+            break
     # print("Scores:")
     # print(scores)
     # print("Total Votes:")
