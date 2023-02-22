@@ -165,7 +165,7 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     solved = False
     for _ in range(1000):  # Only do 1000 rounds
         old_score = scores
-        scores = np.dot(votes_matrix, scores) * decay
+        scores = np.dot(votes_matrix, scores) * (1 - decay)
         scores[0] = 1  # Viewer will always have 100% Trust
 
         # Check if solved
