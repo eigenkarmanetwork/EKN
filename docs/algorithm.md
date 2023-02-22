@@ -114,7 +114,7 @@ scores[0] = 1  # Viewer has 100% Trust
 decay = 0.25
 solved = False
 for _ in range(1000):
-    old_score = scores
+    old_scores = scores
     scores = np.dot(votes_matrix, scores) * (1 - decay)
     scores[0] = 1  # Viewer will always have 100% Trust
 
