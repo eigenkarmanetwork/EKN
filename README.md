@@ -1,20 +1,20 @@
-# Eigen Trust Network (ETN)
+# EigenKarma Network (EKN)
 
 Trust is powerful. Knowing who is capable, value aligned, or has done good work in the past is extremely valuable for all sorts of decisions, but currently it takes lots of effort to collect this information. Imagine if you could leverage your trust network's collective knowledge to get a read of hundreds or thousands of times as many people, with minimal effort!
 
 That is what EigenTrust Network is creating. We use an algorithm similar to Google's PageRank to model trust propagation, setting the subjective source of all trust to each individual. So that from your personal view of the network you can see how much of your trust has flowed to anyone else.
 
-This specific repository is for the ETN API. You can view `app.py` to see all the routes which exist in `etn/routes/`.
+This specific repository is for the EKN API. You can view `app.py` to see all the routes which exist in `etn/routes/`.
 
 ## How to Use
 
-If you're wanting to use the ETN as a regular user, you may want to go to [our website](https://www.eigentrust.net) where you can sign up and begin trusting people!
+If you're wanting to use the EKN as a regular user, you may want to go to [our website](https://www.eigenkarma.net) where you can sign up and begin trusting people!
 
 If you're a service provider, or wanting to use the API directly, you've come to the right place!
 
 ### API Documentation
 
-All our API routes accept both JSON and Standard POST syntax. Our base URL is `https://eigentrust.net:31415`, for example our register user route is `https://eigentrust.net:31415/register_user`
+All our API routes accept both JSON and Standard POST syntax. Our base URL is `https://eigenkarma.net:31415`, for example our register user route is `https://eigenkarma.net:31415/register_user`
 
 #### Registration Routes
 
@@ -41,7 +41,7 @@ Returns:
 
 Description:
 
-Register a new user with the ETN, `username` and `password` must be passed in plain text.  `username` is case sensitive and must not contain a colon (`:`).
+Register a new user with the EKN, `username` and `password` must be passed in plain text.  `username` is case sensitive and must not contain a colon (`:`).
 
 ##### Register Temp User
 
@@ -65,7 +65,7 @@ Returns:
 
 Description:
 
-Register a new temporary user with the ETN, `service_user` should be the username on the service you're registering a temp account for.  `service_user` is case sensitive.  Services must get permission from users before sending data off to ETN.  This permission may be through ToS or otherwise.
+Register a new temporary user with the EKN, `service_user` should be the username on the service you're registering a temp account for.  `service_user` is case sensitive.  Services must get permission from users before sending data off to EKN.  This permission may be through ToS or otherwise.
 
 ##### Register Service
 
@@ -86,7 +86,7 @@ Returns:
 
 Description:
 
-Register a new service with the ETN. `name` is case sensitive.  This will allow you to send votes on behalf of the users in your service.  Calling this function return's your service's ETN key.  For future requests, `name` should be passed as `service_name` and the string returned by this API call should be passed as `service_key`.
+Register a new service with the EKN. `name` is case sensitive.  This will allow you to send votes on behalf of the users in your service.  Calling this function return's your service's EKN key.  For future requests, `name` should be passed as `service_name` and the string returned by this API call should be passed as `service_key`.
 
 ##### Register Connection
 
@@ -100,8 +100,8 @@ Data:
         "service_name": str
         "service_key": str
         "service_user": str (Username on Service)
-        "username": str (Username on ETN)
-        "password": str (Password on ETN)
+        "username": str (Username on EKN)
+        "password": str (Password on EKN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
 
@@ -109,7 +109,7 @@ Returns
 
 * 403: Service name or key is incorrect.
 * 403: Username or Password is incorrect.
-* 409: Service user already connected to the ETN.
+* 409: Service user already connected to the EKN.
 * 200: JSON:
         {
             "password": str
@@ -119,11 +119,11 @@ Returns
 
 Description:
 
-Connects a user on a service to their user on ETN. `password_type` is optional, and defaults to `"raw_password"`.  This API call returns a JSON string that contains a key to authorize trust votes on behalf of the user.  However, if the user does not authorize services to vote on behalf of them, then a password hash is returned.  This feature is deprecated.  If a connection key is returned, then the user authorizes the service to cast votes on their behalf.  If a session key is returned, then the user authories the service to cast votes on their behalf so long as they've logged into ETN within the last 24 hours. If a session key is returned, then the expires field will contain a unix timestamp of how long the session key is good for.  To get a new session key, please call `/get_current_key`.
+Connects a user on a service to their user on EKN. `password_type` is optional, and defaults to `"raw_password"`.  This API call returns a JSON string that contains a key to authorize trust votes on behalf of the user.  However, if the user does not authorize services to vote on behalf of them, then a password hash is returned.  This feature is deprecated.  If a connection key is returned, then the user authorizes the service to cast votes on their behalf.  If a session key is returned, then the user authories the service to cast votes on their behalf so long as they've logged into EKN within the last 24 hours. If a session key is returned, then the expires field will contain a unix timestamp of how long the session key is good for.  To get a new session key, please call `/get_current_key`.
 
 #### User Functions
 
-There are a few different user function API calls but most should only be used by [our website](https://www.eigentrust.net/).
+There are a few different user function API calls but most should only be used by [our website](https://www.eigenkarma.net/).
 
 ##### Verify Credentials
 
@@ -294,7 +294,7 @@ Returns
 
 Description:
 
-Returns the total users recorded in ETN, including temporary and real/registered users.
+Returns the total users recorded in EKN, including temporary and real/registered users.
 
 ##### Get Total Registered Users
 
@@ -308,7 +308,7 @@ Returns
 
 Description:
 
-Returns the total users recorded in ETN, excluding temp users.
+Returns the total users recorded in EKN, excluding temp users.
 
 ##### Get Total Temporary Users
 
@@ -322,7 +322,7 @@ Returns
 
 Description:
 
-Returns the total users recorded in ETN, excluding real/registered users.
+Returns the total users recorded in EKN, excluding real/registered users.
 
 ##### Get Total Votes
 
@@ -336,4 +336,4 @@ Returns
 
 Description:
 
-Returns the total number of votes recorded in ETN.
+Returns the total number of votes recorded in EKN.
