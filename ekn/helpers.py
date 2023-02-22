@@ -83,7 +83,10 @@ def get_users_index(users: set[int], from_user: int) -> dict[int, int]:
 
 def get_votes(_for: int, _from: int, flavor: str) -> float:
     """
-    np.lingalg.solve calls LAPACK gesv which runs at O(n^3) time.
+    The time complexity of np.dot is unknown to me, but this function runs at
+    least at O(n^2).
+
+    Any update to this function should also be reflected in /docs/algorithm.md
     """
 
     with DatabaseManager() as db:
@@ -151,7 +154,7 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     for_user_votes = user_votes.get(_for, 0)
     for i in range(users_count):
         votes_matrix[i][for_index] = 0
-    for i in range(1, users_count):
+    for i in range(users_count):
         votes_matrix[i, i] = 0
     # print("User Index:")
     # print(users_index)
@@ -169,11 +172,7 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
         scores[0] = 1  # Viewer will always have 100% Trust
 
         # Check if solved
-        solved = True
-        for a, b in zip(old_score, scores):
-            if not round(a, 8) == round(b, 8):
-                solved = False
-                break
+        solved = np.all(old_scores.round(8) == scores.round(8))
         if solved:
             break
     # print("Scores:")
