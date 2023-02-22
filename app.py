@@ -1,5 +1,5 @@
-from etn.database import DatabaseManager
-from etn.routes import (
+from ekn.database import DatabaseManager
+from ekn.routes import (
     categories,
     change_security,
     gdpr_view,

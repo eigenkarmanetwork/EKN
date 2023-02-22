@@ -1,6 +1,6 @@
 from database_migration.update import get_version
-from etn.database import DatabaseManager
-from etn.decs import allow_cors
+from ekn.database import DatabaseManager
+from ekn.decs import allow_cors
 from flask import Response
 
 

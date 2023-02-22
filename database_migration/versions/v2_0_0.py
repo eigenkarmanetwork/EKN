@@ -3,7 +3,7 @@ import hashlib
 import secrets
 
 if TYPE_CHECKING:
-    from etn.database import DatabaseManager
+    from ekn.database import DatabaseManager
 
 
 def update(database: "DatabaseManager") -> None:

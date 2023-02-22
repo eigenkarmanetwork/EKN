@@ -1,6 +1,6 @@
-from etn.database import DatabaseManager
-from etn.decs import allow_cors
-from etn.helpers import (
+from ekn.database import DatabaseManager
+from ekn.decs import allow_cors
+from ekn.helpers import (
     get_params,
     get_votes,
     resolve_service_username,
@@ -21,7 +21,7 @@ def vote() -> Response:
         "service_key": str (Service's key)
         "to": str (Username on Service)
         "from": str (Username on Service)
-        "password": str (Password on ETN)
+        "password": str (Password on EKN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
         "flavor": Optional[str]
         "amount": Optional[int]
@@ -116,7 +116,7 @@ def get_vote_count() -> Response:
         "service_key": str (Service's key)
         "for": str (Username on Service)
         "from": str (Username on Service)
-        "password": str (Password on ETN)
+        "password": str (Password on EKN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
         "flavor": Optional[str]
     }
@@ -197,7 +197,7 @@ def get_score() -> Response:
         "service_key": str (Service's key)
         "for": str (Username on Service)
         "from": str (Username on Service)
-        "password": str (Password on ETN)
+        "password": str (Password on EKN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
         "flavor": Optional[str]
     }

@@ -1,5 +1,5 @@
 from database_migration.update import update_database
-from etn import types
+from ekn import types
 import os
 import sqlite3
 import threading
@@ -13,7 +13,7 @@ class DatabaseManager:
         self.conn = None
         self.cur = None
         update_database(self)
-        self._get_etn_service()
+        self._get_ekn_service()
 
     def open(self) -> None:
         self.lock.acquire()
@@ -99,14 +99,14 @@ class DatabaseManager:
         conn.close()
         print("Created database!")
 
-    def _get_etn_service(self) -> None:
+    def _get_ekn_service(self) -> None:
         conn = sqlite3.connect(self.path)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         result = cur.execute("SELECT * FROM services WHERE name='ETN'")
-        self.etn_service_obj = result.fetchone()
-        self.etn_service_id = self.etn_service_obj["id"]
-        assert self.etn_service_obj, "ETN Service Does Not Exist!"
+        self.ekn_service_obj = result.fetchone()
+        self.ekn_service_id = self.ekn_service_obj["id"]
+        assert self.ekn_service_obj, "EKN Service Does Not Exist!"
         cur.close()
         conn.close()
 

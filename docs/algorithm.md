@@ -1,7 +1,7 @@
 EKN Algorithm
 =============
 
-The code for the algorithm is in `/etn/helpers.py`.  This document will provide a near line by line breakdown of the code and what it does.
+The code for the algorithm is in `/ekn/helpers.py`.  This document will provide a near line by line breakdown of the code and what it does.
 
 The algorthim's function is below and runs at O(n^3) where n is the number of people involved in calculation:
 

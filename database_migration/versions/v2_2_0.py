@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from etn.database import DatabaseManager
+    from ekn.database import DatabaseManager
 
 
 def update(database: "DatabaseManager") -> None:

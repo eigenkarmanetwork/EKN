@@ -1,6 +1,6 @@
-from etn.database import DatabaseManager
-from etn.decs import allow_cors
-from etn.helpers import (
+from ekn.database import DatabaseManager
+from ekn.decs import allow_cors
+from ekn.helpers import (
     get_params,
     verify_credentials,
     verify_service,
@@ -18,7 +18,7 @@ import time
 @allow_cors
 def verify_credentials_route() -> Response:
     """
-    Used to verify ETN user credentials, and return either a connection key, session key, or password hash.
+    Used to verify EKN user credentials, and return either a connection key, session key, or password hash.
 
     Message Structure:
     {
@@ -215,7 +215,7 @@ def get_current_key() -> Response:
 @allow_cors
 def change_password() -> Response:
     """
-    Used to change a user's ETN password.
+    Used to change a user's EKN password.
 
     Message Structure:
     {

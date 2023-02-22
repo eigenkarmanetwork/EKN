@@ -1,6 +1,6 @@
-from etn.database import DatabaseManager
-from etn.decs import allow_cors
-from etn.helpers import get_params, verify_service, verify_credentials
+from ekn.database import DatabaseManager
+from ekn.decs import allow_cors
+from ekn.helpers import get_params, verify_service, verify_credentials
 from flask import Response
 from typing import Optional
 import hashlib
@@ -48,7 +48,7 @@ def register_user() -> Response:
         id = result.fetchone()["id"]
         db.execute(
             "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
-            (db.etn_service_id, username, id),
+            (db.ekn_service_id, username, id),
         )
     return Response("Registration Successful.", 200)
 
@@ -138,15 +138,15 @@ def register_connection() -> Response:
         "service_name": str (Service's name)
         "service_key": str (Service's key)
         "service_user": str (Username on Service)
-        "username": str (Username on ETN)
-        "password": str (Password on ETN)
+        "username": str (Username on EKN)
+        "password": str (Password on EKN)
         "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
     }
 
     Returns:
     403: Service name or key is incorrect.
     403: Username or Password is incorrect.
-    409: Service user already connected to the ETN.
+    409: Service user already connected to the EKN.
     200: JSON:
     {
         "password": str
@@ -197,7 +197,7 @@ def register_connection() -> Response:
                     "Service user is connected to a non existant account"
                 )
             if int(temp_user["temp"]) == 0:
-                return Response("Service user already connected to the ETN.", 409)
+                return Response("Service user already connected to the EKN.", 409)
             # Temp account found! Migrating...
             db.execute(
                 "UPDATE votes SET user_from=:new_id WHERE user_from=:temp_id",

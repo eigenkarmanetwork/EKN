@@ -2,7 +2,7 @@ from typing import Callable, Literal, Optional, TYPE_CHECKING
 from collections.abc import Iterable
 
 if TYPE_CHECKING:
-    from etn.database import DatabaseManager
+    from ekn.database import DatabaseManager
 
 SQL_PARAM = tuple[int | str | bool | float, ...]
 SQL_PARAMS = Optional[SQL_PARAM | Iterable[SQL_PARAM]]

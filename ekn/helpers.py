@@ -1,5 +1,5 @@
-from etn.database import DatabaseManager
-from etn.types import PASSWORD_TYPE
+from ekn.database import DatabaseManager
+from ekn.types import PASSWORD_TYPE
 from flask import request
 from typing import Any, Optional
 import numpy as np
@@ -222,7 +222,7 @@ def verify_credentials(
     service_id: Optional[int] = None,
 ) -> Optional[sqlite3.Row]:
     """
-    Verifies an ETN username and password/key.
+    Verifies an EKN username and password/key.
     """
 
     if service_id and password_type != "connection_key":
@@ -245,7 +245,7 @@ def verify_credentials(
 
 def verify_credentials_raw(username: str, password: str) -> Optional[sqlite3.Row]:
     """
-    Verifies an ETN username and raw password.
+    Verifies an EKN username and raw password.
     """
 
     with DatabaseManager() as db:
@@ -267,7 +267,7 @@ def verify_credentials_raw(username: str, password: str) -> Optional[sqlite3.Row
 
 def verify_credentials_hash(username: str, password_hash: str) -> Optional[sqlite3.Row]:
     """
-    Verifies an ETN username and password hash.
+    Verifies an EKN username and password hash.
     """
 
     with DatabaseManager() as db:
@@ -285,7 +285,7 @@ def verify_credentials_hash(username: str, password_hash: str) -> Optional[sqlit
 
 def verify_session_key(username: str, key: str) -> Optional[sqlite3.Row]:
     """
-    Verifies an ETN user id and session key.
+    Verifies an EKN user id and session key.
     """
 
     with DatabaseManager() as db:
@@ -336,7 +336,7 @@ def resolve_service_username(
     service_id: int, service_user: str
 ) -> Optional[sqlite3.Row]:
     """
-    Gets an ETN username from a service id and the username on the service.
+    Gets an EKN username from a service id and the username on the service.
     """
 
     with DatabaseManager() as db:
@@ -360,7 +360,7 @@ def verify_service_username(
     service_id: int, service_user: str, key: str
 ) -> Optional[sqlite3.Row]:
     """
-    Gets an ETN username from a service id and the username on the service.
+    Gets an EKN username from a service id and the username on the service.
     """
 
     with DatabaseManager() as db:

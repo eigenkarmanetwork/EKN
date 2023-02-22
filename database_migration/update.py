@@ -9,12 +9,12 @@ from database_migration.versions import (
     v2_2_1,
     v2_3_0,
 )
-from etn import types
+from ekn import types
 from typing import TYPE_CHECKING
 import warnings
 
 if TYPE_CHECKING:
-    from etn.database import DatabaseManager
+    from ekn.database import DatabaseManager
 
 main_database_versions: types.DATABASE_VERSIONS = {
     "1.0.0": None,

@@ -1,7 +1,7 @@
-import etn.routes.misc as misc
-import etn.routes.registration as registration
-import etn.routes.users as users
-import etn.routes.voting as voting
+import ekn.routes.misc as misc
+import ekn.routes.registration as registration
+import ekn.routes.users as users
+import ekn.routes.voting as voting
 
 categories = voting.categories
 change_security = users.change_security

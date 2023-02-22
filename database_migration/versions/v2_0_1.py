@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from etn.database import DatabaseManager
+    from ekn.database import DatabaseManager
 
 
 def update(database: "DatabaseManager") -> None:
@@ -29,17 +29,17 @@ def update(database: "DatabaseManager") -> None:
                 ),
             )
         result = db.execute("SELECT * FROM services WHERE name='ETN'")
-        etn_service_id = result.fetchone()["id"]
+        ekn_service_id = result.fetchone()["id"]
         result = db.execute("SELECT * FROM users")
         for user in result.fetchall():
             result = db.execute(
                 "SELECT * FROM connections WHERE service=:service AND user=:id",
-                {"service": etn_service_id, "id": user["id"]},
+                {"service": ekn_service_id, "id": user["id"]},
             )
             if result.fetchone():
                 continue
             db.execute(
                 "INSERT INTO connections (service, service_user, user) VALUES (?, ?, ?)",
-                (etn_service_id, user["username"], user["id"]),
+                (ekn_service_id, user["username"], user["id"]),
             )
         db.execute("UPDATE etn_settings SET value='2.0.1' WHERE setting='version'")
