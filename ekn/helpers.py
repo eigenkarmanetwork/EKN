@@ -30,27 +30,22 @@ def get_params(params: list[str]) -> Any:
 
 def get_where_str(flavors: Optional[list[str]]) -> str:
     if not flavors:
-        where_str = "WHERE '1'='1'"
-    else:
-        where_str = "WHERE category in ("
-        for flavor in flavors:
-            where_str += f"'{flavor}', "
-        where_str = where_str.strip(", ")  # Strip tailing comma
-        where_str += ")"
-    return where_str
+        return "WHERE '1'='1'"
+
+    flavors = ', '.join([f"'{flavor}'" for flavor in flavors])
+    return f"WHERE category in ({flavors})"
 
 
 def get_network(
-    user: int, flavors: Optional[list[str]] = None, checking: Optional[int] = None
+    user: int, where_str: str, checking: Optional[int] = None
 ) -> set[int]:
     """
     Function runs at O(n^2) time.
     """
-    where_str = get_where_str(flavors)
     users: set[int] = {user}
     to_process: set[int] = {user}
     with DatabaseManager() as db:
-        while len(to_process) > 0 and len(users) < NETWORK_SIZE_LIMIT:
+        while to_process and len(users) < NETWORK_SIZE_LIMIT:
             u = to_process.pop()
             if u == checking:
                 continue
@@ -83,41 +78,39 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
 
     Any update to this function should also be reflected in /docs/algorithm.md
     """
-
     with DatabaseManager() as db:
         result = db.execute(
             "SELECT * FROM categories WHERE category=:flavor", {"flavor": flavor}
         )
         row = result.fetchone()
+        # If the checked flavor doesn't exist, then the trust is 0
         if not row:
             return 0.0
         flavor_type = row["type"]
 
     if flavor_type == "general":
-        users_in_network = get_network(_from, checking=_for)
-        where_str = "WHERE '1'='1'"
+        where_str = get_where_str([])
     elif flavor_type == "normal":
-        users_in_network = get_network(_from, [flavor], _for)
         where_str = get_where_str([flavor])
     elif flavor_type == "secondary":
-        users_in_network = get_network(_from, [row["secondary_of"]], _for)
         where_str = get_where_str([row["secondary_of"]])
     elif flavor_type == "composite":
         flavors = json.loads(row["composite_of"])
         flavors.append(flavor)
-        users_in_network = get_network(_from, flavors, _for)
         where_str = get_where_str(flavors)
+    users_in_network = get_network(_from, where_str, _for)
 
+    # If the node being inspected is not in the trust network, then the trust for them is 0.0
     if _for not in users_in_network:
         return 0.0
+
     users_count = len(users_in_network)
     users_index = get_users_index(users_in_network, _from)
 
     votes_matrix = np.zeros((users_count, users_count))
     total_votes = 0
-    user_votes: dict[int, int] = {}
-    for user in users_in_network:
-        user_votes[user] = 0
+    user_votes: dict[int, int] = {user: 0 for user in users_in_network}
+
     with DatabaseManager() as db:
         for user in users_in_network:
             if user == _for:
@@ -203,10 +196,9 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     else:
         score = round(scores[for_index] * (total_votes - for_user_votes), 2)
 
-    if score == -0.0:
-        score = 0.0
-    # print(score)
-    return score
+    if score > 0.0:
+        return score
+    return 0.0
 
 
 def verify_credentials(

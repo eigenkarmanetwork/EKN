@@ -6,8 +6,8 @@ import threading
 
 
 class DatabaseManager:
-    def __init__(self):
-        self.path = "database.db"
+    def __init__(self, path="database.db"):
+        self.path = path
         self.lock = threading.Lock()
         self.connected = False
         self.conn = None
