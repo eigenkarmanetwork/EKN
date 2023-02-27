@@ -17,27 +17,62 @@ import time
 
 @allow_cors
 def verify_credentials_route() -> Response:
-    """
-    Used to verify EKN user credentials, and return either a connection key, session key, or password hash.
-
-    Message Structure:
-    {
-        "username": str
-        "password": str
-        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
-        "service_name": Optional[str]
-        "service_key": Optional[str]
-    }
-    Returns:
-    403: Service name or key is incorrect.
-    403: Username or Password is incorrect.
-    404: Service is not connected.
-    200: JSON:
-    {
-        "password": str
-        "password_type": Literal["password_hash", "conneciton_key", "session_key"]
-        "expires": int (unix timestamp or 0 if N/A)
-    }
+    """Used to verify EKN user credentials, and return either a connection key, session key, or password hash.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: Credentials to be verified.
+      schema:
+        type: object
+        required:
+          - username
+          - password
+        properties:
+          service_name:
+            type: string
+            description: The name of the service
+            example: Discord
+          service_key:
+            type: string
+            description: The key of the service
+            example: d7cedfcc6670340680755685b3ae6642
+          username:
+            type: string
+            description: The username on EKN
+            example: mr_blobby
+          password:
+            type: string
+            description: The password on EKN
+            example: hunter2
+          password_type:
+            type: string
+            description: The type of password
+            enum: [raw_password, password_hash, connection_key, session_key]
+            default: raw_password
+    responses:
+        200:
+          description: Verification Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                    type: string
+                    example: 2ab96390c7dbe3439de74d0c9b0b1767
+                  password_type:
+                    type: string
+                    enum: [password_hash, connection_key, session_key]
+                  expires:
+                    type: integer
+                    description: Posix timestamp or 0 if N/A
+        403:
+          description: Service name or key is incorrect / Username or Password is incorrect
+        409:
+          description: Service user already connected to the EKN
     """
     username, password, password_type, service_name, service_key = get_params(
         ["username", "password", "password_type", "service_name", "service_key"]
@@ -126,27 +161,56 @@ def verify_credentials_route() -> Response:
 
 @allow_cors
 def get_current_key() -> Response:
+    """Get's the current session or connection key if it exists, otherwise returns 404.
+    Allows a service to get a connection key or session key of a connected user. `username` should be the username or your service, and is case sensitive.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: Credentials to be verified.
+      schema:
+        type: object
+        required:
+          - username
+          - service_name
+          - service_key
+        properties:
+          service_name:
+            type: string
+            description: The name of the service
+            example: Discord
+          service_key:
+            type: string
+            description: The key of the service
+            example: a4b4da38aa385015769b44de37651a51
+          username:
+            type: string
+            description: The username on EKN
+            example: mr_blobby
+    responses:
+        200:
+          description: Session/Connection key found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                      type: string
+                      example: 2ab96390c7dbe3439de74d0c9b0b1767
+                  password_type:
+                      type: string
+                      enum: [password_hash, connection_key, session_key]
+                  expires:
+                      type: integer
+                      description: Posix timestamp or 0 if N/A
+        403:
+          description: Service name or key is incorrect / Service is not connected
+        404:
+          description: No key available
     """
-    Get's the current session or connection key if it exists, otherwise returns 404.
-
-    Message Structure:
-    {
-        "username": str
-        "service_name": str
-        "service_key": str
-    }
-    Returns:
-    403: Service name or key is incorrect.
-    404: Service is not connected.
-    404: No key available.
-    200: JSON:
-    {
-        "password": str
-        "password_type": Literal["conneciton_key", "session_key"]
-        "expires": int (unix timestamp or 0 if N/A)
-    }
-    """
-
     username, service_name, service_key = get_params(
         ["username", "service_name", "service_key"]
     )
@@ -214,18 +278,38 @@ def get_current_key() -> Response:
 
 @allow_cors
 def change_password() -> Response:
-    """
-    Used to change a user's EKN password.
-
-    Message Structure:
-    {
-        "username": str
-        "password": str
-        "new_password": str
-    }
-    Returns:
-    403: Username or Password is incorrect.
-    200: Success.
+    """Used to change a user's EKN password.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: User credentials
+      schema:
+        type: object
+        required:
+          - username
+          - password
+          - new_password
+        properties:
+          username:
+            type: string
+            description: The username on EKN
+            example: mr_blobby
+          password:
+            type: string
+            description: The current password
+            example: hunter2
+          new_password:
+            type: string
+            description: The new password
+            example: I_love_mama
+    responses:
+        200:
+          description: Success
+        403:
+          description: Username or Password is incorrect
     """
     username, password, new_password = get_params(
         ["username", "password", "new_password"]
@@ -250,18 +334,45 @@ def change_password() -> Response:
 
 @allow_cors
 def gdpr_view() -> Response:
-    """
-    Used to pull all data we have on a user in compliance with GDPR.
-
-    Message Structure:
-    {
-        "username": str
-        "password": str
-        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
-    }
-    Returns:
-    403: Username or Password is incorrect.
-    200: JSON List of every row of data.
+    """Used to pull all data we have on a user in compliance with GDPR.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: User credentials
+      schema:
+        type: object
+        required:
+          - username
+          - password
+          - password_type
+        properties:
+          username:
+            type: string
+            description: The username on EKN
+            example: mr_blobby
+          password:
+            type: string
+            description: The current password
+            example: hunter2
+          password_type:
+            type: string
+            description: The type of password
+            enum: [raw_password, password_hash, connection_key, session_key]
+            default: raw_password
+    responses:
+        200:
+          description: List of every row of data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        403:
+          description: Username or Password is incorrect
     """
     username, password, password_type = get_params(
         ["username", "password", "password_type"]
@@ -298,19 +409,40 @@ def gdpr_view() -> Response:
 
 @allow_cors
 def change_security() -> Response:
-    """
-    Used to change a user's security settings.
-
-    Message Structure:
-    {
-        "username": str
-        "password": str
-        "security": Literal[0, 1, 2]
-    }
-    Returns:
-    400: Invalid security option.
-    403: Username or Password is incorrect.
-    200: Success.
+    """Used to change a user's security settings.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: User credentials
+      schema:
+        type: object
+        required:
+          - username
+          - password
+          - security
+        properties:
+          username:
+            type: string
+            description: The username on EKN
+            example: mr_blobby
+          password:
+            type: string
+            description: The current password
+            example: hunter2
+          security:
+            type: integer
+            enum: [0, 1, 2]
+            description: Security level
+    responses:
+        200:
+          description: Success
+        400:
+          description: Invalid security option
+        403:
+          description: Username or Password is incorrect
     """
     username, password, security = get_params(
         ["username", "password", "security"]

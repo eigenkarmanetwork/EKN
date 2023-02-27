@@ -14,27 +14,65 @@ import json
 
 @allow_cors(hosts=["*"])
 def vote() -> Response:
-    """
-    Message Structure:
-    {
-        "service_name": str (Service's name)
-        "service_key": str (Service's key)
-        "to": str (Username on Service)
-        "from": str (Username on Service)
-        "password": str (Password on EKN)
-        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
-        "flavor": Optional[str]
-        "amount": Optional[int]
-    }
-
-    Returns:
-    400: User cannot vote for themselves.
-    400: Cannot have a negative amount of trust.
-    403: Username or Password is incorrect.
-    403: Service name or key is incorrect.
-    404: 'to' is not connected to this service.
-    404: Flavor does not exist.
-    200: Success.
+    """Allows a service to vote on behalf of a user
+    `passwword_type` is optional and defaults to `"raw_password"`. `flavor` is optional and defaults to `"general"`. `amount` is optional and defaults to `1`.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: Vote
+      schema:
+        type: object
+        required:
+          - service_name
+          - service_key
+          - to
+          - from
+          - password
+          - password_type
+        properties:
+          service_name:
+            type: string
+            description: Service's name
+            example: Discord
+          service_key:
+            type: string
+            description: Service's key
+            example: a4b4da38aa385015769b44de37651a51
+          to:
+            type: string
+            description: Username on Service
+            example: mr_blobby
+          from:
+            type: string
+            description: Username on Service
+            example: johnny
+          password:
+            type: string
+            description: Password on EKN
+            example: hunter2
+          password_type:
+            type: string
+            description: The type of password
+            enum: [raw_password, password_hash, connection_key, session_key]
+            default: raw_password
+          flavor:
+            type: string
+            default: general
+          amount:
+            type: number
+            default: 1
+    responses:
+        200:
+          description: Success
+        400:
+          description: User cannot vote for themselves / Cannot have a negative amount of trust
+        403:
+          description: Username or Password is incorrect / Service name or key is incorrect
+        404:
+          description: _to_ is not connected to this service / Flavor does not exist
     """
     service, key, to, for_, _from, password, password_type, flavor, amount = get_params(
         [
@@ -107,35 +145,81 @@ def vote() -> Response:
 
 @allow_cors(hosts=["*"])
 def get_vote_count() -> Response:
-    """
-    Get how many times a user has voted for someone. This is NOT their trust score.
+    """Get how many times a user has voted for someone. This is NOT their trust score.
+    Allows a service to get the number of times a user (A) has been trusted by user (B) on behalf of a
+    user (B). `passwword_type` is optional and defaults to `"raw_password"`.
 
-    If flavor is not specified, it will return the total number of times a user has voted for someone in all categories.
-
-    Message Structure:
-    {
-        "service_name": str (Service's name)
-        "service_key": str (Service's key)
-        "for": str (Username on Service)
-        "from": str (Username on Service)
-        "password": str (Password on EKN)
-        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
-        "flavor": Optional[str]
-    }
-
-    Returns:
-    400: User cannot view themselves.
-    403: Username or Password is incorrect.
-    403: Service name or key is incorrect.
-    404: 'for' is not connected to this service.
-    404: Flavor does not exist.
-    200: JSON:
-    {
-        "for": str (Username Provided)
-        "from": str (Username Provided)
-        "votes": int
-        "flavor": str
-    }
+    If `flavor` is not specified, it will return the total number of times a user (B) has voted for a
+    user (A) in *all* categories.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: Vote
+      schema:
+        type: object
+        required:
+          - service_name
+          - service_key
+          - to
+          - from
+          - password
+        properties:
+          service_name:
+            type: string
+            description: Service's name
+            example: Discord
+          service_key:
+            type: string
+            description: Service's key
+            example: a4b4da38aa385015769b44de37651a51
+          to:
+            type: string
+            description: Username on Service
+            example: mr_blobby
+          from:
+            type: string
+            description: Username on Service
+            example: johnny
+          password:
+            type: string
+            description: Password on EKN
+            example: hunter2
+          password_type:
+            type: string
+            description: The type of password
+            enum: [raw_password, password_hash, connection_key, session_key]
+            default: raw_password
+          flavor:
+            type: string
+            default: general
+    responses:
+      200:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                for:
+                  type: string
+                  example: mr_blobby
+                to:
+                  type: string
+                  example: mr_blobby_incognito
+                votes:
+                  type: integer
+                  example: 42
+                flavor:
+                  type: string
+                  example: general
+      400:
+        description: User cannot vote for themselves
+      403:
+        description: Username or Password is incorrect / Service name or key is incorrect
+      404:
+        description: _for_ is not connected to this service / Flavor does not exist
     """
     service, key, _for, _from, password, password_type, flavor = get_params(
         [
@@ -192,31 +276,77 @@ def get_vote_count() -> Response:
 
 @allow_cors(hosts=["*"])
 def get_score() -> Response:
-    """
-    Message Structure:
-    {
-        "service_name": str (Service's name)
-        "service_key": str (Service's key)
-        "for": str (Username on Service)
-        "from": str (Username on Service)
-        "password": str (Password on EKN)
-        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
-        "flavor": Optional[str]
-    }
-
-    Returns:
-    400: User cannot view themselves.
-    403: Username or Password is incorrect.
-    403: Service name or key is incorrect.
-    404: 'for' is not connected to this service.
-    404: Flavor does not exist.
-    200: JSON:
-    {
-        "for": str (Username Provided)
-        "from": str (Username Provided)
-        "score": float
-        "flavor": str
-    }
+    """Allows a service to get the trust score for a user on behalf of, and from the perspective of another user.
+    `password_type` is optional and defaults to `"raw_password"`. `flavor` is optional and defaults to `"general"`.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: Vote
+      schema:
+        type: object
+        required:
+          - service_name
+          - service_key
+          - for
+          - from
+          - password
+        properties:
+          service_name:
+            type: string
+            description: Service's name
+            example: Discord
+          service_key:
+            type: string
+            description: Service's key
+            example: a4b4da38aa385015769b44de37651a51
+          for:
+            type: string
+            description: Username on Service
+            example: mr_blobby
+          from:
+            type: string
+            description: Username on Service
+            example: mr_blobby_incognito
+          password:
+            type: string
+            description: Password on EKN
+            example: hunter2
+          password_type:
+            type: string
+            description: The type of password
+            enum: [raw_password, password_hash, connection_key, session_key]
+            default: raw_password
+          flavor:
+            type: string
+            default: general
+    responses:
+      200:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                for:
+                  type: string
+                  example: mr_blobby
+                from:
+                  type: string
+                  example: mr_blobby_incognito
+                score:
+                  type: number
+                  example: 42.123
+                flavor:
+                  type: string
+                  example: general
+      400:
+        description: User cannot view themselves
+      403:
+        description: Username or Password is incorrect / Service name or key is incorrect
+      404:
+        description: _for_ is not connected to this service / Flavor does not exist
     """
     service, key, _for, _from, password, password_type, flavor = get_params(
         [
@@ -260,11 +390,17 @@ def get_score() -> Response:
 
 @allow_cors(hosts=["*"])
 def categories() -> Response:
-    """
-    GET /categories
-
-    Returns:
-    200: JSON list of all categories
+    """Returns a JSON list of all the flavors available.
+    ---
+    responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: category1
     """
     cats = []
     with DatabaseManager() as db:
