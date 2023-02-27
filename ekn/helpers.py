@@ -14,21 +14,16 @@ NETWORK_SIZE_LIMIT = 10_000
 
 
 def get_params(params: list[str]) -> Any:
-    ret = []
     if request.is_json:
         message = request.get_json()
         assert isinstance(message, dict)
-        for param in params:
-            if param in message:
-                ret.append(message[param])
-            else:
-                ret.append(None)
+        ret = [message.get(param) for param in params]
     else:
-        for param in params:
-            ret.append(request.form.get(param, None))
+        ret = [request.form.get(param, None) for param in params]
+
     if len(ret) == 1:
         return ret[0]
-    elif len(ret) == 0:
+    if not ret:
         return None
     return ret
 
