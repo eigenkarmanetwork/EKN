@@ -6,6 +6,38 @@ That is what EigenTrust Network is creating. We use an algorithm similar to Goog
 
 This specific repository is for the EKN API. You can view `app.py` to see all the routes which exist in `etn/routes/`.
 
+## Setup
+
+### Install all requirements:
+#### Pip
+
+* (Optional) create a virtualenv. Make sure that it is Python >= 3.10
+* `pip install -r requirements.txt`
+
+#### Conda
+
+The following should create a new environment with the appropriate libraries installed:
+
+    conda create --name EKN --file requirements.txt
+
+### Run EKN
+
+There are shell specific scripts to run the service, e.g. in the case of bourne shells, run
+
+    ./start.sh
+
+### Generate data
+
+If you want to prepopulate your database with services, users and votes, use the following:
+
+    ./scripts/generate_network.py
+
+This will create a load of services called `service_<number>` and users called `user_<number>`.
+Each service will have a random sample of the available users registered with them, called
+`service_<number>_user_<number>`. These server specific users will grant each other a random
+number of votes.
+All sample users use the same password: `hunter2`
+
 ## How to Use
 
 If you're wanting to use the EKN as a regular user, you may want to go to [our website](https://www.eigenkarma.net) where you can sign up and begin trusting people!

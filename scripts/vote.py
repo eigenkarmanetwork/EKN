@@ -11,7 +11,7 @@ password = getpass.getpass("Password: ")
 data = {
     "service_name": service_name,
     "service_key": service_key,
-    "to": to_user,
+    "for": to_user,
     "from": from_user,
     "password": password,
 }

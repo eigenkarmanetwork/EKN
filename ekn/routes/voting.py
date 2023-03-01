@@ -36,11 +36,12 @@ def vote() -> Response:
     404: Flavor does not exist.
     200: Success.
     """
-    service, key, to, _from, password, password_type, flavor, amount = get_params(
+    service, key, to, for_, _from, password, password_type, flavor, amount = get_params(
         [
             "service_name",
             "service_key",
             "to",
+            "for",
             "from",
             "password",
             "password_type",
@@ -48,6 +49,7 @@ def vote() -> Response:
             "amount",
         ]
     )
+    to = to or for_
     amount = int(amount) if amount else 1
 
     if _from == to:
