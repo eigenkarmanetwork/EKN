@@ -48,6 +48,16 @@ If you're a service provider, or wanting to use the API directly, you've come to
 
 All our API routes accept both JSON and Standard POST syntax. Our base URL is `https://eigenkarma.net:31415`, for example our register user route is `https://eigenkarma.net:31415/register_user`
 
+#### Swagger
+
+URL: `/`
+
+Method: `GET`
+
+Description:
+
+Get a Swagger description of the whole API
+
 #### Registration Routes
 
 These are all our API Routes that have to do with registering something.
@@ -296,7 +306,7 @@ Returns
 
 Description:
 
-Allows a service to get the trust score for a user on behalf of, and from the perspective of another user. `passwword_type` is optional and defaults to `"raw_password"`. `flavor` is optional and defaults to `"general"`.
+Allows a service to get the trust score for a user on behalf of, and from the perspective of another user. `password_type` is optional and defaults to `"raw_password"`. `flavor` is optional and defaults to `"general"`.
 
 ##### Get Trust Categories
 

@@ -11,20 +11,41 @@ import time
 
 @allow_cors
 def register_user() -> Response:
-    """
-    Message Structure:
-    {
-        "username": str
-        "password": str
-    }
-
-    Returns:
-    409: Username is not available.
-    409: Invalid Username.
-    200: Registration Successful.
+    """Register a new user with the EKN
+    Register a new user with the EKN, `username` and `password` must be passed
+    in plain text. `username` is case sensitive and must not contain a colon (`:`).
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: user
+      description: The user to be registered.
+      schema:
+        type: object
+        required:
+          - username
+          - password
+        properties:
+          username:
+            type: string
+            description: The new user's username. Is case sensitive and must not contain ':'
+            example: mr_blobby
+          password:
+            type: string
+            description: The raw password of the user.
+            example: hunter2
+    responses:
+        200:
+          description: Registration Successful
+        409:
+          description: Username is not available / Invalid Username / No password provided
     """
     username, password = get_params(["username", "password"])
-    if ":" in username:
+    if not password:
+        return Response("No password provided", 409)
+
+    if not username or ":" in username:
         # Colon not allowed to ensure unique usernames for temp users
         return Response("Invalid Username", 409)
 
@@ -55,18 +76,43 @@ def register_user() -> Response:
 
 @allow_cors(hosts=["*"])
 def register_temp_user() -> Response:
-    """
-    Message Structure:
-    {
-        "service_user": str (Service Username)
-        "service_name": str
-        "service_key": str
-    }
-
-    Returns:
-    403: Service name or key is incorrect.
-    409: Username is not available.
-    200: Registration Successful.
+    """Register temporary user with the EKN
+    Register a new temporary user with the EKN, `service_user` should be the username on the service
+    you're registering a temp account for. `service_user` is case sensitive. Services must get
+    permission from users before sending data off to EKN. This permission may be through ToS or otherwise.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: user
+      description: The user to be registered.
+      schema:
+        type: object
+        required:
+          - service_user
+          - service_name
+          - service_key
+        properties:
+          service_user:
+            type: string
+            description: The case sensitive username on the service you're registering a temp account for.
+            example: mr_blobby
+          service_name:
+            type: string
+            description: The service's name
+            example: Discord
+          service_key:
+            type: string
+            description: The service's key in EKN
+            example: a4b4da38aa385015769b44de37651a51
+    responses:
+        200:
+          description: Registration Successful
+        403:
+          description: Service name or key is incorrect
+        409:
+          description: Username is not available
     """
     service_user, service, key = get_params(
         ["service_user", "service_name", "service_key"]
@@ -100,15 +146,38 @@ def register_temp_user() -> Response:
 
 @allow_cors
 def register_service() -> Response:
-    """
-    Message Structure:
-    {
-        "name": str
-    }
-
-    Returns:
-    409: Name is not available.
-    200: key: str
+    """Register a new service with the EKN.
+    `name` is case sensitive.  This will allow you to send
+    votes on behalf of the users in your service.  Calling this function return's your service's
+    EKN key.  For future requests, `name` should be passed as `service_name` and the string
+    returned by this API call should be passed as `service_key`.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: The service to be registered.
+      schema:
+        type: object
+        required:
+          - name
+        properties:
+          name:
+            type: string
+            description: The name of the service
+            example: Discord
+    responses:
+        200:
+          description: Registration Successful
+          content:
+            application/xml:
+              schema:
+                description: Service key
+                type: string
+                example: a4b4da38aa385015769b44de37651a51
+        409:
+          description: Name is not available
     """
     name = get_params(["name"])
 
@@ -130,29 +199,80 @@ def register_service() -> Response:
 
 @allow_cors(hosts=["*"])
 def register_connection() -> Response:
-    """
-    Register's a connection, or updates the connection if it already exists.
-
-    Message Structure:
-    {
-        "service_name": str (Service's name)
-        "service_key": str (Service's key)
-        "service_user": str (Username on Service)
-        "username": str (Username on EKN)
-        "password": str (Password on EKN)
-        "password_type": Optional[Literal["raw_password", "password_hash", "connection_key", "session_key"]]
-    }
-
-    Returns:
-    403: Service name or key is incorrect.
-    403: Username or Password is incorrect.
-    409: Service user already connected to the EKN.
-    200: JSON:
-    {
-        "password": str
-        "password_type": Literal["password_hash", "conneciton_key", "session_key"]
-        "expires": int (unix timestamp or 0 if N/A)
-    }
+    """Registers a connection, or updates the connection if it already exists.
+    Connects a user on a service to their user on EKN.
+    `password_type` is optional, and defaults to `"raw_password"`.  This API call
+    returns a JSON string that contains a key to authorize trust votes on behalf of
+    the user.  However, if the user does not authorize services to vote on behalf of
+    them, then a password hash is returned.  This feature is deprecated.  If a
+    connection key is returned, then the user authorizes the service to cast votes on
+    their behalf.  If a session key is returned, then the user authories the service
+    to cast votes on their behalf so long as they've logged into EKN within the last
+    24 hours. If a session key is returned, then the expires field will contain a unix
+    timestamp of how long the session key is good for.  To get a new session key,
+    please call `/get_current_key`.
+    ---
+    consumes:
+    - application/json
+    parameters:
+    - in: body
+      name: service
+      description: User and service to be linked.
+      schema:
+        type: object
+        required:
+          - service_name
+          - service_key
+          - service_user
+          - username
+          - password
+        properties:
+          service_name:
+            type: string
+            description: The name of the service
+            example: Discord
+          service_key:
+            type: string
+            description: The key of the service
+            example: d7cedfcc6670340680755685b3ae6642
+          service_user:
+            type: string
+            description: The username on the service
+            example: discord_mr_blobby
+          username:
+            type: string
+            description: The username on EKN
+            example: mr_blobby
+          password:
+            type: string
+            description: The password on EKN
+            example: hunter2
+          password_type:
+            type: string
+            description: The type of password
+            enum: [raw_password, password_hash, connection_key, session_key]
+            default: raw_password
+    responses:
+        200:
+          description: Registration Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                    type: string
+                    example: 2ab96390c7dbe3439de74d0c9b0b1767
+                  password_type:
+                    type: string
+                    enum: [password_hash, connection_key, session_key]
+                  expires:
+                    type: integer
+                    description: Posix timestamp or 0 if N/A
+        403:
+          description: Service name or key is incorrect / Username or Password is incorrect
+        409:
+          description: Service user already connected to the EKN
     """
     service, key, service_user, username, password, password_type = get_params(
         [

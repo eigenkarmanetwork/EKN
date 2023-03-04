@@ -1,3 +1,7 @@
+from flask import Flask, jsonify
+from flask_swagger import swagger
+
+from database_migration.update import get_version
 from ekn.database import DatabaseManager
 from ekn.routes import (
     categories,
@@ -16,12 +20,11 @@ from ekn.routes import (
     version,
     vote,
 )
-from flask import Flask
 
+# Update DB
+VERSION = get_version(DatabaseManager())
 
-DatabaseManager()  # Update DB
 app = Flask(__name__)
-
 
 app.add_url_rule("/categories", view_func=categories, methods=["GET", "OPTIONS"])
 app.add_url_rule(
@@ -73,3 +76,11 @@ app.add_url_rule(
 )
 app.add_url_rule("/version", view_func=version, methods=["GET"])
 app.add_url_rule("/vote", view_func=vote, methods=["POST", "OPTIONS"])
+
+
+@app.route("/")
+def spec():
+    swag = swagger(app)
+    swag['info']['version'] = VERSION
+    swag['info']['title'] = "EKN"
+    return jsonify(swag)

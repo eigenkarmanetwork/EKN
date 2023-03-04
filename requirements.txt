@@ -1,4 +1,5 @@
-flask
+Flask
 gunicorn
 numpy
 requests
+flask-swagger
