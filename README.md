@@ -26,6 +26,11 @@ There are shell specific scripts to run the service, e.g. in the case of bourne 
 
     ./start.sh
 
+### Tests
+
+    pip install -r requirements-dev.txt
+    python -m pytest
+
 ### Generate data
 
 If you want to prepopulate your database with services, users and votes, use the following:
