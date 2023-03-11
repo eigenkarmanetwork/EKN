@@ -11,6 +11,7 @@ import time
 
 
 NETWORK_SIZE_LIMIT = 10_000
+DECAY = 0.25
 
 
 def get_params(params: list[str]) -> Any:
@@ -152,11 +153,10 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     scores = np.zeros(users_count)
     scores[0] = 1  # Viewer has 100% Trust
 
-    decay = 0.25
     solved = False
     for _ in range(1000):  # Only do 1000 rounds
         old_scores = scores
-        scores = np.dot(votes_matrix, scores) * (1 - decay)
+        scores = np.dot(votes_matrix, scores) * (1 - DECAY)
         scores[0] = 1  # Viewer will always have 100% Trust
 
         # Check if solved
@@ -169,8 +169,9 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
     # print(total_votes - for_user_votes)
     # print("Score: ")
 
+    score = round(scores[for_index] * (total_votes - for_user_votes), 2)
+
     if flavor_type == "secondary":
-        score = round(scores[for_index] * (total_votes - for_user_votes), 2)
         with DatabaseManager() as db:
             for user in users_index:
                 result = db.execute(
@@ -193,8 +194,6 @@ def get_votes(_for: int, _from: int, flavor: str) -> float:
 
                 # print(f"{user=} {s=}")
                 score += row["count"] * s
-    else:
-        score = round(scores[for_index] * (total_votes - for_user_votes), 2)
 
     if score > 0.0:
         return score
