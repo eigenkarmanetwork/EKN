@@ -31,6 +31,13 @@ There are shell specific scripts to run the service, e.g. in the case of bourne 
     pip install -r requirements-dev.txt
     python -m pytest
 
+#### Slow tests
+
+Some tests take a while to run (like > 1 minute), so are disabled by default. To run them,
+add the `--runslow` option, e.g.
+
+    python -m pytest --runslow
+
 ### Generate data
 
 If you want to prepopulate your database with services, users and votes, use the following:
