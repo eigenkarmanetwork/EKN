@@ -1,45 +1,10 @@
 import pytest
-from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
 
-from ekn.database import DatabaseManager
 from ekn.helpers import (
     get_params, get_where_str, get_users_index, get_network,
     get_votes, DECAY
 )
-
-
-@pytest.fixture
-def db():
-    with TemporaryDirectory() as folder:
-        db_file = folder + '/test.db'
-        with DatabaseManager(db_file) as database:
-            with patch('ekn.helpers.DatabaseManager', return_value=DatabaseManager(db_file)):
-                yield database
-
-
-def make_network(db, votes):
-    for vote in votes:
-        if len(vote) == 2:
-            vote = list(vote) + [1]
-        if len(vote) == 3:
-            vote = list(vote) + ['general']
-
-        db.execute(
-            "INSERT INTO votes (user_from, user_to, count, category) VALUES (?, ?, ?, ?)",
-            vote
-        )
-        db.commit()
-
-
-@pytest.fixture
-def network(db):
-    votes = [
-        (2, 1),
-        # Make sure there are other networks in the database
-        (200, 201), (201, 200),
-    ]
-    make_network(db, votes)
 
 
 @pytest.mark.parametrize('data, expected', (
@@ -128,7 +93,7 @@ def test_get_network_empty(db):
     assert get_network(1, "WHERE 1=1") == {1}
 
 
-def test_get_network(db):
+def test_get_network(make_network):
     votes = [
         # Direct contacts
         (1, 2), (1, 3), (1, 4), (1, 5),
@@ -140,11 +105,11 @@ def test_get_network(db):
         (6, 1), (6, 3),
         (7, 8), (7, 9),
     ]
-    make_network(db, votes)
+    make_network(votes)
     assert get_network(1, "WHERE 1=1") == set(range(1, 10))
 
 
-def test_get_network_sparse(db):
+def test_get_network_sparse(make_network):
     votes = [
         # Direct contacts
         (1, 2), (1, 5),
@@ -155,13 +120,13 @@ def test_get_network_sparse(db):
         (6, 1),
         (7, 8), (7, 9),
     ]
-    make_network(db, votes)
+    make_network(votes)
     assert get_network(1, "WHERE 1=1") == {1, 2, 5, 6}
 
 
-def test_get_network_cycle(db):
+def test_get_network_cycle(make_network):
     votes = [(1, 2), (2, 3), (3, 4), (4, 5), (5, 1)]
-    make_network(db, votes)
+    make_network(votes)
     assert get_network(1, "WHERE 1=1") == {1, 2, 3, 4, 5}
 
 
@@ -184,16 +149,16 @@ def test_get_votes_no_connection_to(network):
 
 
 ## Tests that calculate votes
-def test_get_votes_basic(db):
+def test_get_votes_basic(make_network):
     # The basic case where there are only 2 users, and one of them has voted a few times for the other
-    make_network(db, [(2, 1, 5)])
+    make_network([(2, 1, 5)])
     assert get_votes(1, 2, 'general') == 5 * (1 - DECAY)
     assert get_votes(2, 1, 'general') == 0.0
 
 
-def test_get_votes_mutual(db):
+def test_get_votes_mutual(make_network):
     # there are only 2 users, both of which have voted for each other
-    make_network(db, [(2, 1, 5), (1, 2, 4)])
+    make_network([(2, 1, 5), (1, 2, 4)])
     assert get_votes(1, 2, 'general') == 5 * (1 - DECAY)
     assert get_votes(2, 1, 'general') == 4 * (1 - DECAY)
 
@@ -210,11 +175,11 @@ def test_get_votes_mutual(db):
     [(2, 1, 1), (3, 2, 2), (4, 3, 3), (5, 4, 4), (6, 5, 5)],
     [(2, 1, 10), (3, 2, 1), (4, 3, 20), (5, 4, 1), (6, 5, 50)],
 ))
-def test_get_votes_long_chain(db, votes):
+def test_get_votes_long_chain(make_network, votes):
     # the users are connected via a longish chain of votes
     #
     # user 1 --- user 2 --- user 3 --- user 4 --- user 5 --- user 6
-    make_network(db, votes)
+    make_network(votes)
     for i in range(1, 6):
         score = (1 - DECAY) ** i
         total_votes = sum(vote for _, _, vote in reversed(votes[:i]))
@@ -233,7 +198,7 @@ def test_get_votes_long_chain(db, votes):
     [13, 1, -1, 1],
     [14, 20, 1, 10000],
 ))
-def test_get_votes_when_1_to_n(db, votes):
+def test_get_votes_when_1_to_n(make_network, votes):
     # User 1 has voted for a lot of other users
     #
     #           /--- user 2
@@ -247,7 +212,7 @@ def test_get_votes_when_1_to_n(db, votes):
         (4, 1, u1_u4), (5, 1, u1_u5),
     ]
 
-    make_network(db, graph)
+    make_network(graph)
     score = (1 - DECAY) * votes[0]
     assert get_votes(1, 2, 'general') == pytest.approx(score, 0.01)
 
@@ -264,7 +229,7 @@ def test_get_votes_when_1_to_n(db, votes):
     [13, 1, -1, 1],
     [14, 20, 1, 10000],
 ))
-def test_get_votes_when_n_to_1(db, votes):
+def test_get_votes_when_n_to_1(make_network, votes):
     # A lot of other users have voted for user 2
     #
     # user 1 ----\
@@ -278,7 +243,7 @@ def test_get_votes_when_n_to_1(db, votes):
         (2, 4, u4_u2), (2, 5, u5_u2),
     ]
 
-    make_network(db, graph)
+    make_network(graph)
     score = (1 - DECAY) * votes[0]
     assert get_votes(1, 2, 'general') == pytest.approx(score, 0.01)
 
@@ -290,7 +255,7 @@ def test_get_votes_when_n_to_1(db, votes):
     [1, 2, 6],
     [100, 2, 6],
 ))
-def test_get_votes_indirect(db, votes):
+def test_get_votes_indirect(make_network, votes):
     # The following network is checked:
     #
     #         /- user2 -\
@@ -300,7 +265,7 @@ def test_get_votes_indirect(db, votes):
     u1_u2, u1_u3, u2_u3 = votes
     graph = [(2, 1, u1_u2), (3, 1, u1_u3), (3, 2, u2_u3)]
 
-    make_network(db, graph)
+    make_network(graph)
     scale = (1 - DECAY)
 
     u3_2_score = scale * u2_u3 / (u2_u3 + u1_u3)
@@ -317,7 +282,7 @@ def test_get_votes_indirect(db, votes):
     [1, 2, 3, 4],
     [2, 1, 10, 1],
 ))
-def test_get_votes_diamond(db, votes):
+def test_get_votes_diamond(make_network, votes):
     # The following network is checked:
     #
     #            - user2 -
@@ -332,7 +297,7 @@ def test_get_votes_diamond(db, votes):
         (4, 2, u2_u4), (4, 3, u3_u4),
     ]
 
-    make_network(db, graph)
+    make_network(graph)
     scale = (1 - DECAY)
 
     u4_2_score = scale * u2_u4 / (u2_u4 + u3_u4)
@@ -391,7 +356,7 @@ def test_get_votes_diamond(db, votes):
         'user6': [58, 72]
     },
 ))
-def test_get_votes_complicated_network(db, votes):
+def test_get_votes_complicated_network(make_network, votes):
     # The following network is checked:
     #
     #        /--------------------------\
@@ -416,7 +381,7 @@ def test_get_votes_complicated_network(db, votes):
         (7, 6, u6_u7), (8, 6, u6_u8),
     ]
 
-    make_network(db, graph)
+    make_network(graph)
     scale = (1 - DECAY)
 
     # direct connections - users 2, 3 and 4
